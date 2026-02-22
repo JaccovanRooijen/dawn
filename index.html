@@ -8,568 +8,159 @@
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@200;300;400&family=DM+Serif+Display:ital@1&display=swap" rel="stylesheet">
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
   :root {
-    --bg: #0e0e0f;
-    --surface: rgba(255,255,255,0.04);
-    --amber: #FFB347;
-    --amber-dim: rgba(255,179,71,0.15);
-    --text: #f0ece6;
-    --muted: rgba(255, 255, 255, 0.3);
-    --border: rgba(255,255,255,0.07);
+    --bg: #0e0e0f; --surface: rgba(255,255,255,0.04);
+    --amber: #FFB347; --amber-dim: rgba(255,179,71,0.15);
+    --text: #f0ece6; --muted: rgba(240,236,230,0.3); --border: rgba(255,255,255,0.07);
   }
+  html, body { height:100%; width:100%; overflow:hidden; background:var(--bg); color:var(--text); font-family:'DM Sans',sans-serif; -webkit-font-smoothing:antialiased; }
+  body::before { content:''; position:fixed; inset:0; background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E"); pointer-events:none; z-index:0; }
 
-  html, body {
-    height: 100%;
-    width: 100%;
-    overflow: hidden;
-    background: var(--bg);
-    color: var(--text);
-    font-family: 'DM Sans', sans-serif;
-    -webkit-font-smoothing: antialiased;
-  }
+  /* Flash */
+  #flash { position:fixed; inset:0; background:radial-gradient(ellipse at center,rgba(255,179,71,0.18) 0%,rgba(255,179,71,0.04) 60%,transparent 100%); pointer-events:none; z-index:100; opacity:0; }
+  #flash.fire { animation:amberFlash 0.6s cubic-bezier(0.22,1,0.36,1) forwards; }
+  @keyframes amberFlash { 0%{opacity:0} 15%{opacity:1} 100%{opacity:0} }
 
-  /* Subtle noise texture */
-  body::before {
-    content: '';
-    position: fixed;
-    inset: 0;
-    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
-    pointer-events: none;
-    z-index: 0;
-  }
+  /* Layout */
+  #app { position:relative; height:100%; display:flex; flex-direction:column; z-index:1; }
+  .header { display:flex; justify-content:space-between; align-items:center; padding:48px 32px 0; transition:opacity 0.4s; }
+  .logo { font-family:'DM Serif Display',serif; font-style:italic; font-size:1.1rem; letter-spacing:0.05em; color:var(--amber); opacity:0.8; }
+  .step-counter { font-size:0.75rem; font-weight:300; letter-spacing:0.15em; color:var(--muted); text-transform:uppercase; }
 
-  /* ─── MAIN SCREEN ─────────────────────────────────── */
-  #app {
-    position: relative;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    z-index: 1;
-  }
+  /* Focus */
+  .focus-area { flex:1; display:flex; flex-direction:column; justify-content:center; align-items:center; padding:0 32px; cursor:pointer; user-select:none; -webkit-tap-highlight-color:transparent; }
+  .task-label { font-size:clamp(2.8rem,12vw,5.5rem); font-weight:200; letter-spacing:-0.02em; line-height:1.1; text-align:center; color:var(--text); transition:opacity 0.5s ease,transform 0.5s ease; text-transform:uppercase; }
+  .task-label.fade-out { opacity:0; transform:translateY(-16px); }
+  .task-duration { margin-top:20px; font-size:0.8rem; font-weight:300; letter-spacing:0.25em; color:var(--muted); text-transform:uppercase; }
+  .tap-hint { position:absolute; bottom:130px; left:50%; transform:translateX(-50%); font-size:0.65rem; letter-spacing:0.2em; color:var(--muted); text-transform:uppercase; animation:pulse 3s ease-in-out infinite; white-space:nowrap; }
+  @keyframes pulse { 0%,100%{opacity:0.3} 50%{opacity:0.7} }
 
-  /* Header */
-  .header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 48px 32px 0;
-    transition: opacity 0.4s;
-  }
+  /* Completion */
+  .completion { display:none; flex-direction:column; justify-content:center; align-items:center; height:100%; text-align:center; padding:20px 32px; }
+  .completion.visible { display:flex; }
+  .completion-top { margin-bottom:28px; }
+  .completion-top .big-check { font-size:2.6rem; margin-bottom:10px; display:block; animation:popIn 0.5s cubic-bezier(0.34,1.56,0.64,1); }
+  .completion-top h2 { font-size:1.4rem; font-weight:200; letter-spacing:0.1em; text-transform:uppercase; margin-bottom:6px; }
+  .completion-top p { font-size:0.7rem; color:var(--muted); letter-spacing:0.15em; text-transform:uppercase; }
+  @keyframes popIn { from{transform:scale(0);opacity:0} to{transform:scale(1);opacity:1} }
 
-  .logo {
-    font-family: 'DM Serif Display', serif;
-    font-style: italic;
-    font-size: 1.1rem;
-    letter-spacing: 0.05em;
-    color: var(--amber);
-    opacity: 0.8;
-  }
+  /* Slot machine */
+  .slot-machine { display:flex; flex-direction:column; align-items:center; gap:16px; }
+  .slot-label { font-size:0.58rem; letter-spacing:0.28em; text-transform:uppercase; color:var(--muted); }
+  .slot-reels { display:flex; gap:8px; }
+  .reel-wrap { width:70px; height:80px; overflow:hidden; border:1px solid var(--border); border-radius:10px; background:rgba(255,255,255,0.02); position:relative; transition:border-color 0.4s,box-shadow 0.4s; }
+  .reel-wrap::before,.reel-wrap::after { content:''; position:absolute; left:0; right:0; height:22px; z-index:2; pointer-events:none; }
+  .reel-wrap::before { top:0; background:linear-gradient(to bottom,#0e0e0f,transparent); }
+  .reel-wrap::after  { bottom:0; background:linear-gradient(to top,#0e0e0f,transparent); }
+  .reel-line { position:absolute; left:8px; right:8px; top:50%; transform:translateY(-50%); height:1px; background:rgba(255,179,71,0.25); z-index:3; pointer-events:none; }
+  .reel { display:flex; flex-direction:column; align-items:center; will-change:transform; }
+  .reel-item { width:70px; height:80px; display:flex; align-items:center; justify-content:center; font-size:2rem; flex-shrink:0; }
+  .reel-wrap.win-glow { border-color:rgba(255,179,71,0.6); box-shadow:0 0 20px rgba(255,179,71,0.35); animation:winPulse 1.2s ease-in-out infinite; }
+  @keyframes winPulse { 0%,100%{box-shadow:0 0 16px rgba(255,179,71,0.3)} 50%{box-shadow:0 0 32px rgba(255,179,71,0.65)} }
 
-  .step-counter {
-    font-size: 0.75rem;
-    font-weight: 300;
-    letter-spacing: 0.15em;
-    color: var(--muted);
-    text-transform: uppercase;
-  }
+  .slot-handle-wrap { display:flex; flex-direction:column; align-items:center; gap:8px; }
+  .handle-btn { width:54px; height:54px; border-radius:50%; background:none; border:1.5px solid var(--amber); color:var(--amber); font-size:1.4rem; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all 0.2s; box-shadow:0 0 16px rgba(255,179,71,0.15); -webkit-tap-highlight-color:transparent; }
+  .handle-btn:hover { background:rgba(255,179,71,0.08); box-shadow:0 0 28px rgba(255,179,71,0.3); }
+  .handle-btn:active { transform:scale(0.9) translateY(3px); }
+  .handle-btn.spinning { pointer-events:none; opacity:0.4; }
+  .handle-btn.used { border-color:var(--border); color:var(--muted); box-shadow:none; pointer-events:none; cursor:default; }
+  .handle-hint { font-size:0.58rem; letter-spacing:0.2em; text-transform:uppercase; color:var(--muted); }
 
-  /* Focus area */
-  .focus-area {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    padding: 0 32px;
-    cursor: pointer;
-    user-select: none;
-    -webkit-tap-highlight-color: transparent;
-  }
+  .slot-result { font-size:0.68rem; letter-spacing:0.22em; text-transform:uppercase; min-height:1.1em; transition:all 0.4s; color:transparent; }
+  .slot-result.win  { color:var(--amber); }
+  .slot-result.lose { color:var(--muted); }
 
-  .task-label {
-    font-size: clamp(2.8rem, 12vw, 5.5rem);
-    font-weight: 200;
-    letter-spacing: -0.02em;
-    line-height: 1.1;
-    text-align: center;
-    color: var(--text);
-    transition: opacity 0.5s ease, transform 0.5s ease;
-    text-transform: uppercase;
-  }
+  .restart-btn { margin-top:20px; padding:13px 28px; background:none; border:1px solid var(--border); color:var(--muted); font-family:inherit; font-size:0.72rem; letter-spacing:0.2em; text-transform:uppercase; cursor:pointer; border-radius:2px; transition:all 0.3s; }
+  .restart-btn:hover { border-color:var(--amber); color:var(--amber); }
 
-  .task-label.fade-out {
-    opacity: 0;
-    transform: translateY(-16px);
-  }
+  /* Progress */
+  .progress-wrap { padding:0 32px 32px; }
+  .progress-track { width:100%; height:1px; background:var(--border); border-radius:1px; overflow:visible; position:relative; }
+  .progress-fill { height:1px; background:var(--amber); border-radius:1px; transition:width 1s linear; box-shadow:0 0 8px rgba(255,179,71,0.5); }
+  .progress-dot { position:absolute; right:-3px; top:-3px; width:7px; height:7px; border-radius:50%; background:var(--amber); box-shadow:0 0 10px var(--amber); }
 
-  .task-duration {
-    margin-top: 20px;
-    font-size: 0.8rem;
-    font-weight: 300;
-    letter-spacing: 0.25em;
-    color: var(--muted);
-    text-transform: uppercase;
-    transition: opacity 0.5s ease;
-  }
+  /* Peek btn */
+  .peek-btn { position:fixed; bottom:40px; right:32px; width:40px; height:40px; border-radius:50%; background:var(--surface); border:1px solid var(--border); display:flex; align-items:center; justify-content:center; cursor:pointer; z-index:10; transition:all 0.3s; -webkit-tap-highlight-color:transparent; backdrop-filter:blur(10px); }
+  .peek-btn:hover { border-color:var(--amber); }
+  .peek-btn svg { width:16px; height:16px; stroke:var(--muted); transition:stroke 0.3s; }
+  .peek-btn:hover svg { stroke:var(--amber); }
 
-  .tap-hint {
-    position: absolute;
-    bottom: 130px;
-    left: 50%;
-    transform: translateX(-50%);
-    font-size: 0.65rem;
-    letter-spacing: 0.2em;
-    color: var(--muted);
-    text-transform: uppercase;
-    animation: pulse 3s ease-in-out infinite;
-    white-space: nowrap;
-  }
+  /* Overlay */
+  .overlay { position:fixed; inset:0; z-index:20; pointer-events:none; display:flex; flex-direction:column; justify-content:flex-end; }
+  .overlay-backdrop { position:absolute; inset:0; background:rgba(14,14,15,0.6); opacity:0; transition:opacity 0.4s ease; }
+  .overlay-panel { position:relative; background:rgba(22,22,24,0.85); backdrop-filter:blur(24px) saturate(180%); -webkit-backdrop-filter:blur(24px) saturate(180%); border-top:1px solid var(--border); border-radius:20px 20px 0 0; padding:28px 32px 48px; transform:translateY(100%); transition:transform 0.45s cubic-bezier(0.32,0.72,0,1); max-height:70vh; overflow-y:auto; }
+  .overlay.open { pointer-events:all; }
+  .overlay.open .overlay-backdrop { opacity:1; }
+  .overlay.open .overlay-panel { transform:translateY(0); }
+  .overlay-handle { width:36px; height:3px; background:var(--border); border-radius:2px; margin:0 auto 28px; }
+  .overlay-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; }
+  .overlay-title { font-size:0.65rem; letter-spacing:0.25em; text-transform:uppercase; color:var(--muted); }
+  .edit-toggle-btn { background:none; border:1px solid var(--border); color:var(--muted); font-family:inherit; font-size:0.6rem; letter-spacing:0.2em; text-transform:uppercase; padding:6px 12px; border-radius:2px; cursor:pointer; transition:all 0.25s; }
+  .edit-toggle-btn:hover,.edit-toggle-btn.active { border-color:var(--amber); color:var(--amber); }
 
-  @keyframes pulse {
-    0%, 100% { opacity: 0.3; }
-    50% { opacity: 0.7; }
-  }
+  /* Task list */
+  .task-list { list-style:none; }
+  .task-item { display:flex; align-items:center; gap:16px; padding:14px 0; border-bottom:1px solid var(--border); transition:opacity 0.3s; }
+  .task-item:last-child { border-bottom:none; }
+  .task-indicator { flex-shrink:0; width:20px; height:20px; border-radius:50%; display:flex; align-items:center; justify-content:center; }
+  .task-item.done .task-indicator { background:var(--amber-dim); border:1.5px solid var(--amber); }
+  .task-item.done .task-indicator::after { content:''; display:block; width:8px; height:5px; border-left:1.5px solid var(--amber); border-bottom:1.5px solid var(--amber); transform:rotate(-45deg) translate(1px,-1px); }
+  .task-item.active .task-indicator { border:1.5px solid var(--amber); box-shadow:0 0 8px rgba(255,179,71,0.3); }
+  .task-item.active .task-indicator::after { content:''; display:block; width:6px; height:6px; border-radius:50%; background:var(--amber); }
+  .task-item.future .task-indicator { border:1.5px solid rgba(255,255,255,0.15); }
+  .task-info { flex:1; }
+  .task-name { font-size:0.9rem; font-weight:300; letter-spacing:0.05em; transition:color 0.3s; }
+  .task-time { font-size:0.65rem; letter-spacing:0.15em; color:var(--muted); margin-top:2px; }
+  .task-item.done .task-name { text-decoration:line-through; color:var(--muted); }
+  .task-item.done { opacity:0.5; }
+  .task-item.active .task-name { color:var(--amber); }
+  .task-item.future .task-name { color:rgba(240,236,230,0.5); }
+  .task-item.active { position:relative; padding-left:8px; }
+  .task-item.active::before { content:''; position:absolute; left:-32px; top:0; bottom:0; width:2px; background:var(--amber); }
 
-  /* Completion screen */
-  .completion {
-    display: none;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    height: 100%;
-    text-align: center;
-    padding: 32px;
-  }
+  /* Edit */
+  .edit-list { list-style:none; display:none; }
+  .edit-list.visible { display:block; }
+  .task-list.hidden { display:none; }
+  .edit-item { display:flex; align-items:center; gap:10px; padding:10px 0; border-bottom:1px solid var(--border); animation:slideIn 0.2s ease forwards; }
+  .edit-item:last-child { border-bottom:none; }
+  @keyframes slideIn { from{opacity:0;transform:translateX(-8px)} to{opacity:1;transform:translateX(0)} }
+  .drag-handle { cursor:grab; color:var(--muted); font-size:0.9rem; padding:4px; flex-shrink:0; opacity:0.4; transition:opacity 0.2s; }
+  .drag-handle:hover { opacity:0.8; }
+  .drag-handle:active { cursor:grabbing; }
+  .edit-fields { flex:1; display:flex; flex-direction:column; gap:6px; }
+  .edit-name-input { background:rgba(255,255,255,0.04); border:1px solid var(--border); border-radius:4px; color:var(--text); font-family:inherit; font-size:0.85rem; font-weight:300; letter-spacing:0.03em; padding:7px 10px; width:100%; outline:none; transition:border-color 0.2s; }
+  .edit-name-input:focus { border-color:rgba(255,179,71,0.5); }
+  .edit-name-input::placeholder { color:var(--muted); }
+  .edit-duration-row { display:flex; align-items:center; gap:8px; }
+  .edit-duration-label { font-size:0.6rem; letter-spacing:0.15em; text-transform:uppercase; color:var(--muted); white-space:nowrap; }
+  .edit-duration-input { background:rgba(255,255,255,0.04); border:1px solid var(--border); border-radius:4px; color:var(--text); font-family:inherit; font-size:0.8rem; font-weight:300; padding:5px 8px; width:56px; outline:none; transition:border-color 0.2s; text-align:center; }
+  .edit-duration-input:focus { border-color:rgba(255,179,71,0.5); }
+  .delete-btn { background:none; border:none; color:rgba(255,255,255,0.2); cursor:pointer; font-size:1.1rem; padding:4px; line-height:1; flex-shrink:0; transition:color 0.2s; border-radius:4px; }
+  .delete-btn:hover { color:#ff6b6b; }
+  .add-task-btn { display:flex; align-items:center; gap:10px; width:100%; margin-top:16px; padding:12px 0; background:none; border:1px dashed var(--border); border-radius:4px; color:var(--muted); font-family:inherit; font-size:0.75rem; letter-spacing:0.15em; text-transform:uppercase; cursor:pointer; justify-content:center; transition:all 0.25s; }
+  .add-task-btn:hover { border-color:rgba(255,179,71,0.4); color:var(--amber); }
+  .edit-item.drag-over { opacity:0.4; }
+  .edit-item.dragging  { opacity:0.15; }
+  .overlay-panel::-webkit-scrollbar { width:3px; }
+  .overlay-panel::-webkit-scrollbar-track { background:transparent; }
+  .overlay-panel::-webkit-scrollbar-thumb { background:var(--border); border-radius:2px; }
 
-  .completion.visible { display: flex; }
-  .completion .big-check {
-    font-size: 4rem;
-    margin-bottom: 24px;
-    animation: popIn 0.5s cubic-bezier(0.34,1.56,0.64,1);
-  }
-  .completion h2 {
-    font-size: 2rem;
-    font-weight: 200;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    margin-bottom: 12px;
-  }
-  .completion p {
-    font-size: 0.8rem;
-    color: var(--muted);
-    letter-spacing: 0.15em;
-    text-transform: uppercase;
-  }
-  .restart-btn {
-    margin-top: 48px;
-    padding: 14px 32px;
-    background: none;
-    border: 1px solid var(--border);
-    color: var(--muted);
-    font-family: inherit;
-    font-size: 0.75rem;
-    letter-spacing: 0.2em;
-    text-transform: uppercase;
-    cursor: pointer;
-    border-radius: 2px;
-    transition: all 0.3s;
-  }
-  .restart-btn:hover { border-color: var(--amber); color: var(--amber); }
-
-  @keyframes popIn {
-    from { transform: scale(0); opacity: 0; }
-    to { transform: scale(1); opacity: 1; }
-  }
-
-  /* ─── PROGRESS BAR ────────────────────────────────── */
-  .progress-wrap {
-    padding: 0 32px 32px;
-  }
-
-  .progress-track {
-    width: 100%;
-    height: 1px;
-    background: var(--border);
-    border-radius: 1px;
-    overflow: visible;
-    position: relative;
-  }
-
-  .progress-fill {
-    height: 1px;
-    background: var(--amber);
-    border-radius: 1px;
-    transition: width 1s linear;
-    box-shadow: 0 0 8px rgba(255,179,71,0.5);
-  }
-
-  .progress-dot {
-    position: absolute;
-    right: -3px;
-    top: -3px;
-    width: 7px;
-    height: 7px;
-    border-radius: 50%;
-    background: var(--amber);
-    box-shadow: 0 0 10px var(--amber);
-    transition: right 1s linear;
-  }
-
-  /* ─── PEEK BUTTON ─────────────────────────────────── */
-  .peek-btn {
-    position: fixed;
-    bottom: 40px;
-    right: 32px;
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    z-index: 10;
-    transition: all 0.3s;
-    -webkit-tap-highlight-color: transparent;
-    backdrop-filter: blur(10px);
-  }
-
-  .peek-btn:hover { border-color: var(--amber); }
-  .peek-btn svg { width: 16px; height: 16px; stroke: var(--muted); transition: stroke 0.3s; }
-  .peek-btn:hover svg { stroke: var(--amber); }
-
-  /* ─── LIST OVERLAY ────────────────────────────────── */
-  .overlay {
-    position: fixed;
-    inset: 0;
-    z-index: 20;
-    pointer-events: none;
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-end;
-  }
-
-  .overlay-backdrop {
-    position: absolute;
-    inset: 0;
-    background: rgba(14,14,15,0.6);
-    opacity: 0;
-    transition: opacity 0.4s ease;
-  }
-
-  .overlay-panel {
-    position: relative;
-    background: rgba(22,22,24,0.85);
-    backdrop-filter: blur(24px) saturate(180%);
-    -webkit-backdrop-filter: blur(24px) saturate(180%);
-    border-top: 1px solid var(--border);
-    border-radius: 20px 20px 0 0;
-    padding: 28px 32px 48px;
-    transform: translateY(100%);
-    transition: transform 0.45s cubic-bezier(0.32,0.72,0,1);
-    max-height: 70vh;
-    overflow-y: auto;
-  }
-
-  .overlay.open {
-    pointer-events: all;
-  }
-
-  .overlay.open .overlay-backdrop { opacity: 1; }
-  .overlay.open .overlay-panel { transform: translateY(0); }
-
-  .overlay-handle {
-    width: 36px;
-    height: 3px;
-    background: var(--border);
-    border-radius: 2px;
-    margin: 0 auto 28px;
-  }
-
-  .overlay-title {
-    font-size: 0.65rem;
-    letter-spacing: 0.25em;
-    text-transform: uppercase;
-    color: var(--muted);
-    margin-bottom: 20px;
-  }
-
-  /* Task list items */
-  .task-list { list-style: none; }
-
-  .task-item {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    padding: 14px 0;
-    border-bottom: 1px solid var(--border);
-    transition: opacity 0.3s;
-  }
-
-  .task-item:last-child { border-bottom: none; }
-
-  /* Status indicator */
-  .task-indicator {
-    flex-shrink: 0;
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .task-item.done .task-indicator {
-    background: var(--amber-dim);
-    border: 1.5px solid var(--amber);
-  }
-
-  .task-item.done .task-indicator::after {
-    content: '';
-    display: block;
-    width: 8px;
-    height: 5px;
-    border-left: 1.5px solid var(--amber);
-    border-bottom: 1.5px solid var(--amber);
-    transform: rotate(-45deg) translate(1px, -1px);
-  }
-
-  .task-item.active .task-indicator {
-    background: none;
-    border: 1.5px solid var(--amber);
-    box-shadow: 0 0 8px rgba(255,179,71,0.3);
-  }
-
-  .task-item.active .task-indicator::after {
-    content: '';
-    display: block;
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: var(--amber);
-  }
-
-  .task-item.future .task-indicator {
-    border: 1.5px solid rgba(255,255,255,0.15);
-  }
-
-  /* Text */
-  .task-info { flex: 1; }
-
-  .task-name {
-    font-size: 0.9rem;
-    font-weight: 300;
-    letter-spacing: 0.05em;
-    transition: color 0.3s;
-  }
-
-  .task-time {
-    font-size: 0.65rem;
-    letter-spacing: 0.15em;
-    color: var(--muted);
-    margin-top: 2px;
-  }
-
-  .task-item.done .task-name {
-    text-decoration: line-through;
-    color: var(--muted);
-  }
-
-  .task-item.done { opacity: 0.5; }
-
-  .task-item.active .task-name {
-    color: var(--amber);
-  }
-
-  .task-item.future .task-name {
-    color: rgba(240,236,230,0.5);
-  }
-
-  /* Active border accent */
-  .task-item.active {
-    position: relative;
-    padding-left: 8px;
-  }
-  .task-item.active::before {
-    content: '';
-    position: absolute;
-    left: -32px;
-    top: 0;
-    bottom: 0;
-    width: 2px;
-    background: var(--amber);
-  }
-
-  /* Scrollbar */
-  .overlay-panel::-webkit-scrollbar { width: 3px; }
-  .overlay-panel::-webkit-scrollbar-track { background: transparent; }
-  .overlay-panel::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
-
-  /* Transitions */
-  .main-content { transition: opacity 0.4s; }
-  .main-content.hidden { opacity: 0; pointer-events: none; }
-
-  @media (min-width: 480px) {
-    .task-label { font-size: clamp(3rem, 8vw, 5.5rem); }
-  }
-
-  /* ─── OVERLAY HEADER ──────────────────────────────── */
-  .overlay-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
-  }
-  .overlay-title { margin-bottom: 0; }
-  .edit-toggle-btn {
-    background: none;
-    border: 1px solid var(--border);
-    color: var(--muted);
-    font-family: inherit;
-    font-size: 0.6rem;
-    letter-spacing: 0.2em;
-    text-transform: uppercase;
-    padding: 6px 12px;
-    border-radius: 2px;
-    cursor: pointer;
-    transition: all 0.25s;
-  }
-  .edit-toggle-btn:hover, .edit-toggle-btn.active {
-    border-color: var(--amber);
-    color: var(--amber);
-  }
-
-  /* ─── EDIT MODE ───────────────────────────────────── */
-  .edit-list { list-style: none; display: none; }
-  .edit-list.visible { display: block; }
-  .task-list.hidden { display: none; }
-
-  .edit-item {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 10px 0;
-    border-bottom: 1px solid var(--border);
-    animation: slideIn 0.2s ease forwards;
-  }
-  .edit-item:last-child { border-bottom: none; }
-
-  @keyframes slideIn {
-    from { opacity: 0; transform: translateX(-8px); }
-    to   { opacity: 1; transform: translateX(0); }
-  }
-
-  .drag-handle {
-    cursor: grab;
-    color: var(--muted);
-    font-size: 0.9rem;
-    padding: 4px;
-    flex-shrink: 0;
-    opacity: 0.4;
-    transition: opacity 0.2s;
-  }
-  .drag-handle:hover { opacity: 0.8; }
-  .drag-handle:active { cursor: grabbing; }
-
-  .edit-fields { flex: 1; display: flex; flex-direction: column; gap: 6px; }
-
-  .edit-name-input {
-    background: rgba(255,255,255,0.04);
-    border: 1px solid var(--border);
-    border-radius: 4px;
-    color: var(--text);
-    font-family: inherit;
-    font-size: 0.85rem;
-    font-weight: 300;
-    letter-spacing: 0.03em;
-    padding: 7px 10px;
-    width: 100%;
-    outline: none;
-    transition: border-color 0.2s;
-  }
-  .edit-name-input:focus { border-color: rgba(255,179,71,0.5); }
-  .edit-name-input::placeholder { color: var(--muted); }
-
-  .edit-duration-row {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-  .edit-duration-label {
-    font-size: 0.6rem;
-    letter-spacing: 0.15em;
-    text-transform: uppercase;
-    color: var(--muted);
-    white-space: nowrap;
-  }
-  .edit-duration-input {
-    background: rgba(255,255,255,0.04);
-    border: 1px solid var(--border);
-    border-radius: 4px;
-    color: var(--text);
-    font-family: inherit;
-    font-size: 0.8rem;
-    font-weight: 300;
-    padding: 5px 8px;
-    width: 56px;
-    outline: none;
-    transition: border-color 0.2s;
-    text-align: center;
-  }
-  .edit-duration-input:focus { border-color: rgba(255,179,71,0.5); }
-
-  .delete-btn {
-    background: none;
-    border: none;
-    color: rgba(255,255,255,0.2);
-    cursor: pointer;
-    font-size: 1.1rem;
-    padding: 4px;
-    line-height: 1;
-    flex-shrink: 0;
-    transition: color 0.2s;
-    border-radius: 4px;
-  }
-  .delete-btn:hover { color: #ff6b6b; }
-
-  .add-task-btn {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    width: 100%;
-    margin-top: 16px;
-    padding: 12px 0;
-    background: none;
-    border: 1px dashed var(--border);
-    border-radius: 4px;
-    color: var(--muted);
-    font-family: inherit;
-    font-size: 0.75rem;
-    letter-spacing: 0.15em;
-    text-transform: uppercase;
-    cursor: pointer;
-    justify-content: center;
-    transition: all 0.25s;
-  }
-  .add-task-btn:hover { border-color: rgba(255,179,71,0.4); color: var(--amber); }
-
-  /* Drag-over visual */
-  .edit-item.drag-over { opacity: 0.4; }
-  .edit-item.dragging  { opacity: 0.15; }
+  .main-content { transition:opacity 0.4s; }
+  .main-content.hidden { opacity:0; pointer-events:none; }
+  @media(min-width:480px){ .task-label{font-size:clamp(3rem,8vw,5.5rem)} }
 </style>
 </head>
 <body>
 
+<div id="flash"></div>
+
 <div id="app">
-  <!-- Header -->
   <div class="header" id="header">
     <span class="logo">Dawn</span>
     <span class="step-counter" id="stepCounter">1 / 4</span>
   </div>
 
-  <!-- Main content -->
   <div class="main-content" id="mainContent">
     <div class="focus-area" id="focusArea">
       <div class="task-label" id="taskLabel"></div>
@@ -578,15 +169,30 @@
     </div>
   </div>
 
-  <!-- Completion -->
   <div class="completion" id="completionScreen">
-    <div class="big-check">✦</div>
-    <h2>Routine Voltooid</h2>
-    <p>Goed begin van de dag</p>
-    <button class="restart-btn" id="restartBtn">Opnieuw beginnen</button>
+    <div class="completion-top">
+      <span class="big-check">✦</span>
+      <h2>Routine Voltooid</h2>
+      <p>Jouw beloning wacht</p>
+    </div>
+
+    <div class="slot-machine">
+      <div class="slot-label">Trek aan de hendel</div>
+      <div class="slot-reels">
+        <div class="reel-wrap" id="reel0"><div class="reel-line"></div><div class="reel" id="ri0"></div></div>
+        <div class="reel-wrap" id="reel1"><div class="reel-line"></div><div class="reel" id="ri1"></div></div>
+        <div class="reel-wrap" id="reel2"><div class="reel-line"></div><div class="reel" id="ri2"></div></div>
+      </div>
+      <div class="slot-handle-wrap">
+        <button class="handle-btn" id="handleBtn">🎰</button>
+        <span class="handle-hint">Tik om te draaien</span>
+      </div>
+      <div class="slot-result" id="slotResult"></div>
+    </div>
+
+    <button class="restart-btn" id="restartBtn">Nieuwe dag beginnen</button>
   </div>
 
-  <!-- Progress bar -->
   <div class="progress-wrap" id="progressWrap">
     <div class="progress-track">
       <div class="progress-fill" id="progressFill" style="width:0%">
@@ -596,14 +202,12 @@
   </div>
 </div>
 
-<!-- Peek button -->
 <button class="peek-btn" id="peekBtn" aria-label="Bekijk lijst">
   <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
     <path d="M4 6h16M4 12h16M4 18h10"/>
   </svg>
 </button>
 
-<!-- List overlay -->
 <div class="overlay" id="overlay">
   <div class="overlay-backdrop" id="overlayBackdrop"></div>
   <div class="overlay-panel">
@@ -621,150 +225,199 @@
 <script>
 const DEFAULT_TASKS = [
   { name: 'Opstaan & Bed Opmaken', duration: 2 },
-  { name: 'Mediteren',              duration: 10 },
-  { name: 'Drink 500ml Water',      duration: 1 },
-  { name: 'Yoga / Stretch',         duration: 15 },
+  { name: 'Mediteren',             duration: 10 },
+  { name: 'Drink 500ml Water',     duration: 1  },
+  { name: 'Yoga / Stretch',        duration: 15 },
 ];
-
-function loadTasks() {
-  try {
-    const saved = localStorage.getItem('dawn-tasks');
-    return saved ? JSON.parse(saved) : DEFAULT_TASKS;
-  } catch { return DEFAULT_TASKS; }
-}
-
-function saveTasks() {
-  try { localStorage.setItem('dawn-tasks', JSON.stringify(tasks)); } catch {}
-}
-
+function loadTasks() { try { const s = localStorage.getItem('dawn-tasks'); return s ? JSON.parse(s) : DEFAULT_TASKS; } catch { return DEFAULT_TASKS; } }
+function saveTasks() { try { localStorage.setItem('dawn-tasks', JSON.stringify(tasks)); } catch {} }
 let tasks = loadTasks();
+let currentIndex = 0, timer = null, elapsed = 0, editMode = false, dragSrcIndex = null, slotUsed = false;
 
-let currentIndex = 0;
-let timer = null;
-let elapsed = 0;
-let editMode = false;
-let dragSrcIndex = null;
+const $ = id => document.getElementById(id);
+const taskLabel=$('taskLabel'), taskDuration=$('taskDuration'), stepCounter=$('stepCounter');
+const progressFill=$('progressFill'), mainContent=$('mainContent'), completionScreen=$('completionScreen');
+const progressWrap=$('progressWrap'), header=$('header'), tapHint=$('tapHint');
+const overlay=$('overlay'), overlayBackdrop=$('overlayBackdrop'), peekBtn=$('peekBtn');
+const taskList=$('taskList'), editList=$('editList'), addTaskBtn=$('addTaskBtn');
+const editToggleBtn=$('editToggleBtn'), restartBtn=$('restartBtn'), focusArea=$('focusArea');
+const flashEl=$('flash'), handleBtn=$('handleBtn'), slotResult=$('slotResult');
 
-const taskLabel       = document.getElementById('taskLabel');
-const taskDuration    = document.getElementById('taskDuration');
-const stepCounter     = document.getElementById('stepCounter');
-const progressFill    = document.getElementById('progressFill');
-const mainContent     = document.getElementById('mainContent');
-const completionScreen= document.getElementById('completionScreen');
-const progressWrap    = document.getElementById('progressWrap');
-const header          = document.getElementById('header');
-const tapHint         = document.getElementById('tapHint');
-const overlay         = document.getElementById('overlay');
-const overlayBackdrop = document.getElementById('overlayBackdrop');
-const peekBtn         = document.getElementById('peekBtn');
-const taskList        = document.getElementById('taskList');
-const editList        = document.getElementById('editList');
-const addTaskBtn      = document.getElementById('addTaskBtn');
-const editToggleBtn   = document.getElementById('editToggleBtn');
-const restartBtn      = document.getElementById('restartBtn');
-const focusArea       = document.getElementById('focusArea');
+/* Audio */
+let audioCtx = null;
+function ctx() { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); return audioCtx; }
+function tone(freq, start, dur, vol=0.15, type='sine') {
+  try {
+    const c=ctx(), o=c.createOscillator(), g=c.createGain();
+    o.connect(g); g.connect(c.destination);
+    o.type=type; o.frequency.value=freq;
+    g.gain.setValueAtTime(0, c.currentTime+start);
+    g.gain.linearRampToValueAtTime(vol, c.currentTime+start+0.02);
+    g.gain.exponentialRampToValueAtTime(0.001, c.currentTime+start+dur);
+    o.start(c.currentTime+start); o.stop(c.currentTime+start+dur);
+  } catch {}
+}
+function playClick()    { tone(880,0,0.06,0.14); }
+function playChime()    { [[523.25,0],[659.25,0.15],[783.99,0.3]].forEach(([f,d])=>tone(f,d,0.5)); }
+function playWin()      { [[523.25,0],[659.25,0.1],[783.99,0.2],[1046.5,0.32]].forEach(([f,d])=>tone(f,d,0.5,0.13)); }
+function playLose()     { [440,350].forEach((f,i)=>tone(f,i*0.18,0.28,0.1)); }
+function playTick()     { tone(600,0,0.04,0.05); }
 
-/* ── Helpers ───────────────────────────────────────── */
-function formatDuration(min) {
-  return min === 1 ? '1 min' : `${min} min`;
+function haptic(p=12) { if (navigator.vibrate) navigator.vibrate(p); }
+function triggerFlash() { flashEl.classList.remove('fire'); void flashEl.offsetWidth; flashEl.classList.add('fire'); }
+
+/* Slot */
+const SYMBOLS = ['🍋','🍒','🍇','⭐','🍀','🔔'];
+
+function buildReels() {
+  for (let i=0; i<3; i++) {
+    const inner = $('ri'+i);
+    inner.innerHTML = '';
+    for (let j=0; j<30; j++) {
+      const d = document.createElement('div');
+      d.className = 'reel-item';
+      d.textContent = SYMBOLS[Math.floor(Math.random()*SYMBOLS.length)];
+      inner.appendChild(d);
+    }
+    inner.style.transform = 'translateY(0px)';
+  }
 }
 
-/* ── Focus / Timer ─────────────────────────────────── */
-function renderTask(index, transition = true) {
+function spinSlot() {
+  if (slotUsed) return;
+  slotUsed = true;
+  handleBtn.classList.add('spinning');
+  haptic([30,40,30]);
+  slotResult.className = 'slot-result';
+  slotResult.textContent = '';
+
+  const isWin = Math.random() < 0.25;
+  const winSym = SYMBOLS[Math.floor(Math.random()*SYMBOLS.length)];
+  const spinCounts = [20, 24, 28];
+  const itemH = 80;
+  let done = 0;
+
+  for (let ri=0; ri<3; ri++) {
+    const inner = $('ri'+ri);
+    const spins = spinCounts[ri];
+    let step = 0;
+    const delay = ri * 280;
+
+    setTimeout(() => {
+      const iv = setInterval(() => {
+        step++;
+        const easing = step < spins - 5 ? 'transform 0.07s linear' : 'transform 0.2s cubic-bezier(0.25,0.46,0.45,0.94)';
+        inner.style.transition = easing;
+        inner.style.transform = `translateY(-${step * itemH}px)`;
+        if (step % 3 === 0) playTick();
+
+        if (step >= spins) {
+          clearInterval(iv);
+          // inject final symbol
+          const sym = isWin ? winSym : SYMBOLS[Math.floor(Math.random()*SYMBOLS.length)];
+          const fin = document.createElement('div');
+          fin.className = 'reel-item'; fin.textContent = sym;
+          inner.appendChild(fin);
+          inner.style.transition = 'transform 0.25s cubic-bezier(0.34,1.3,0.64,1)';
+          inner.style.transform = `translateY(-${(step+1)*itemH}px)`;
+          done++;
+          if (done === 3) setTimeout(() => resolveSlot(isWin), 350);
+        }
+      }, ri===0 ? 75 : ri===1 ? 85 : 95);
+    }, delay);
+  }
+}
+
+function resolveSlot(isWin) {
+  handleBtn.classList.remove('spinning');
+  handleBtn.classList.add('used');
+  if (isWin) {
+    handleBtn.textContent = '🎉';
+    slotResult.textContent = 'Jackpot! Tot morgen!';
+    slotResult.className = 'slot-result win';
+    document.querySelectorAll('.reel-wrap').forEach(r => r.classList.add('win-glow'));
+    playWin();
+    haptic([60,30,60,30,120]);
+  } else {
+    handleBtn.textContent = '😴';
+    slotResult.textContent = 'Bijna! Morgen meer geluk';
+    slotResult.className = 'slot-result lose';
+    playLose();
+    haptic(50);
+  }
+}
+
+/* Timer / Focus */
+function formatDuration(min) { return min===1 ? '1 min' : `${min} min`; }
+function updateProgress(pct) { progressFill.style.width = pct + '%'; }
+
+function renderTask(index, transition=true) {
   if (index >= tasks.length) { showCompletion(); return; }
   const task = tasks[index];
-  stepCounter.textContent = `${index + 1} / ${tasks.length}`;
+  stepCounter.textContent = `${index+1} / ${tasks.length}`;
   if (transition) {
     taskLabel.classList.add('fade-out');
-    setTimeout(() => {
-      taskLabel.textContent = task.name.toUpperCase();
-      taskDuration.textContent = formatDuration(task.duration);
-      taskLabel.classList.remove('fade-out');
-    }, 400);
-  } else {
-    taskLabel.textContent = task.name.toUpperCase();
-    taskDuration.textContent = formatDuration(task.duration);
-  }
-  startTimer(task.duration);
-  renderList();
+    setTimeout(() => { taskLabel.textContent=task.name.toUpperCase(); taskDuration.textContent=formatDuration(task.duration); taskLabel.classList.remove('fade-out'); }, 400);
+  } else { taskLabel.textContent=task.name.toUpperCase(); taskDuration.textContent=formatDuration(task.duration); }
+  startTimer(task.duration); renderList();
 }
 
 function startTimer(minutes) {
-  clearInterval(timer);
-  elapsed = 0;
-  const total = minutes * 60;
+  clearInterval(timer); elapsed=0;
+  const total = minutes*60;
   updateProgress(0);
-  timer = setInterval(() => {
-    elapsed++;
-    updateProgress(Math.min((elapsed / total) * 100, 100));
-    if (elapsed >= total) clearInterval(timer);
-  }, 1000);
-}
-
-function updateProgress(pct) {
-  progressFill.style.width = pct + '%';
-}
-
-function haptic(pattern = 10) {
-  if (navigator.vibrate) navigator.vibrate(pattern);
+  timer = setInterval(() => { elapsed++; updateProgress(Math.min((elapsed/total)*100,100)); if(elapsed>=total) clearInterval(timer); }, 1000);
 }
 
 function nextTask() {
-  haptic(12);
+  haptic(12); triggerFlash(); playClick();
   currentIndex++;
   currentIndex >= tasks.length ? showCompletion() : renderTask(currentIndex);
 }
 
 function showCompletion() {
-  clearInterval(timer);
-  updateProgress(100);
+  clearInterval(timer); updateProgress(100); playChime();
+  slotUsed = false;
   setTimeout(() => {
     mainContent.classList.add('hidden');
     header.style.opacity = '0';
     tapHint.style.display = 'none';
     completionScreen.classList.add('visible');
     progressWrap.style.opacity = '0';
+    handleBtn.classList.remove('spinning','used');
+    handleBtn.textContent = '🎰';
+    slotResult.className = 'slot-result'; slotResult.textContent = '';
+    document.querySelectorAll('.reel-wrap').forEach(r => r.classList.remove('win-glow'));
+    buildReels();
   }, 600);
 }
 
 function restart() {
-  currentIndex = 0; elapsed = 0;
+  currentIndex=0; elapsed=0;
   completionScreen.classList.remove('visible');
   mainContent.classList.remove('hidden');
-  header.style.opacity = '1';
-  tapHint.style.display = '';
-  progressWrap.style.opacity = '1';
+  header.style.opacity='1'; tapHint.style.display=''; progressWrap.style.opacity='1';
   renderTask(0, false);
 }
 
-/* ── View List ─────────────────────────────────────── */
+/* List */
 function renderList() {
-  taskList.innerHTML = '';
-  tasks.forEach((t, i) => {
-    const li = document.createElement('li');
-    li.className = 'task-item ' + (i < currentIndex ? 'done' : i === currentIndex ? 'active' : 'future');
-    li.innerHTML = `
-      <div class="task-indicator"></div>
-      <div class="task-info">
-        <div class="task-name">${t.name}</div>
-        <div class="task-time">${formatDuration(t.duration)}</div>
-      </div>`;
+  taskList.innerHTML='';
+  tasks.forEach((t,i) => {
+    const li=document.createElement('li');
+    li.className='task-item '+(i<currentIndex?'done':i===currentIndex?'active':'future');
+    li.innerHTML=`<div class="task-indicator"></div><div class="task-info"><div class="task-name">${t.name}</div><div class="task-time">${formatDuration(t.duration)}</div></div>`;
     taskList.appendChild(li);
   });
 }
 
-/* ── Edit List ─────────────────────────────────────── */
+/* Edit */
 function renderEditList() {
-  editList.innerHTML = '';
-  tasks.forEach((t, i) => {
-    const li = document.createElement('li');
-    li.className = 'edit-item';
-    li.draggable = true;
-    li.dataset.index = i;
-    li.style.animationDelay = (i * 40) + 'ms';
-
-    li.innerHTML = `
-      <span class="drag-handle" title="Slepen om te herordenen">⠿</span>
+  editList.innerHTML='';
+  tasks.forEach((t,i) => {
+    const li=document.createElement('li');
+    li.className='edit-item'; li.draggable=true; li.dataset.index=i; li.style.animationDelay=(i*40)+'ms';
+    li.innerHTML=`<span class="drag-handle">⠿</span>
       <div class="edit-fields">
         <input class="edit-name-input" type="text" value="${t.name}" placeholder="Taaknaam" data-i="${i}">
         <div class="edit-duration-row">
@@ -772,135 +425,68 @@ function renderEditList() {
           <input class="edit-duration-input" type="number" min="1" max="120" value="${t.duration}" data-i="${i}">
         </div>
       </div>
-      <button class="delete-btn" data-i="${i}" title="Verwijderen">×</button>`;
-
-    // Live update on input
-    li.querySelector('.edit-name-input').addEventListener('input', (e) => {
-      tasks[+e.target.dataset.i].name = e.target.value || 'Nieuwe taak';
-      saveTasks();
-      syncFocusIfNeeded(+e.target.dataset.i);
+      <button class="delete-btn" data-i="${i}">×</button>`;
+    li.querySelector('.edit-name-input').addEventListener('input', e => { tasks[+e.target.dataset.i].name=e.target.value||'Nieuwe taak'; saveTasks(); syncFocus(+e.target.dataset.i); });
+    li.querySelector('.edit-duration-input').addEventListener('input', e => { tasks[+e.target.dataset.i].duration=Math.max(1,Math.min(120,parseInt(e.target.value)||1)); saveTasks(); syncFocus(+e.target.dataset.i); });
+    li.querySelector('.delete-btn').addEventListener('click', e => {
+      const idx=+e.target.dataset.i; if(tasks.length===1) return;
+      tasks.splice(idx,1); if(currentIndex>=tasks.length) currentIndex=tasks.length-1;
+      saveTasks(); renderEditList(); syncFocus(currentIndex);
     });
-    li.querySelector('.edit-duration-input').addEventListener('input', (e) => {
-      const val = Math.max(1, Math.min(120, parseInt(e.target.value) || 1));
-      tasks[+e.target.dataset.i].duration = val;
-      saveTasks();
-      syncFocusIfNeeded(+e.target.dataset.i);
-    });
-    li.querySelector('.delete-btn').addEventListener('click', (e) => {
-      const idx = +e.target.dataset.i;
-      if (tasks.length === 1) return; // keep at least 1
-      tasks.splice(idx, 1);
-      if (currentIndex >= tasks.length) currentIndex = tasks.length - 1;
-      saveTasks();
-      renderEditList();
-      syncFocusIfNeeded(currentIndex);
-    });
-
-    // Drag & Drop
-    li.addEventListener('dragstart', (e) => {
-      dragSrcIndex = i;
-      setTimeout(() => li.classList.add('dragging'), 0);
-      e.dataTransfer.effectAllowed = 'move';
-    });
+    li.addEventListener('dragstart', e => { dragSrcIndex=i; setTimeout(()=>li.classList.add('dragging'),0); e.dataTransfer.effectAllowed='move'; });
     li.addEventListener('dragend', () => li.classList.remove('dragging'));
-    li.addEventListener('dragover', (e) => { e.preventDefault(); li.classList.add('drag-over'); });
+    li.addEventListener('dragover', e => { e.preventDefault(); li.classList.add('drag-over'); });
     li.addEventListener('dragleave', () => li.classList.remove('drag-over'));
-    li.addEventListener('drop', (e) => {
-      e.preventDefault();
-      li.classList.remove('drag-over');
-      if (dragSrcIndex === null || dragSrcIndex === i) return;
-      const moved = tasks.splice(dragSrcIndex, 1)[0];
-      tasks.splice(i, 0, moved);
-      // adjust currentIndex
-      if (dragSrcIndex === currentIndex) currentIndex = i;
-      else if (dragSrcIndex < currentIndex && i >= currentIndex) currentIndex--;
-      else if (dragSrcIndex > currentIndex && i <= currentIndex) currentIndex++;
-      dragSrcIndex = null;
-      saveTasks();
-      renderEditList();
-      syncFocusIfNeeded(currentIndex);
+    li.addEventListener('drop', e => {
+      e.preventDefault(); li.classList.remove('drag-over');
+      if(dragSrcIndex===null||dragSrcIndex===i) return;
+      const moved=tasks.splice(dragSrcIndex,1)[0]; tasks.splice(i,0,moved);
+      if(dragSrcIndex===currentIndex) currentIndex=i;
+      else if(dragSrcIndex<currentIndex&&i>=currentIndex) currentIndex--;
+      else if(dragSrcIndex>currentIndex&&i<=currentIndex) currentIndex++;
+      dragSrcIndex=null; saveTasks(); renderEditList(); syncFocus(currentIndex);
     });
-
     editList.appendChild(li);
   });
 }
 
-function syncFocusIfNeeded(changedIndex) {
-  if (changedIndex === currentIndex) {
-    const t = tasks[currentIndex];
-    taskLabel.textContent = t.name.toUpperCase();
-    taskDuration.textContent = formatDuration(t.duration);
-    stepCounter.textContent = `${currentIndex + 1} / ${tasks.length}`;
-  }
-  stepCounter.textContent = `${currentIndex + 1} / ${tasks.length}`;
+function syncFocus(idx) {
+  if(idx===currentIndex) { taskLabel.textContent=tasks[currentIndex].name.toUpperCase(); taskDuration.textContent=formatDuration(tasks[currentIndex].duration); }
+  stepCounter.textContent=`${currentIndex+1} / ${tasks.length}`;
 }
 
-/* ── Edit mode toggle ──────────────────────────────── */
 function setEditMode(on) {
-  editMode = on;
-  editToggleBtn.textContent = on ? 'Klaar' : 'Bewerken';
-  editToggleBtn.classList.toggle('active', on);
-  taskList.classList.toggle('hidden', on);
-  addTaskBtn.style.display = on ? 'flex' : 'none';
-  if (on) {
-    editList.classList.add('visible');
-    renderEditList();
-  } else {
-    editList.classList.remove('visible');
-    renderList();
-  }
+  editMode=on; editToggleBtn.textContent=on?'Klaar':'Bewerken'; editToggleBtn.classList.toggle('active',on);
+  taskList.classList.toggle('hidden',on); addTaskBtn.style.display=on?'flex':'none';
+  if(on){editList.classList.add('visible');renderEditList();}else{editList.classList.remove('visible');renderList();}
 }
 
-editToggleBtn.addEventListener('click', () => setEditMode(!editMode));
-
-addTaskBtn.addEventListener('click', () => {
-  tasks.push({ name: 'Nieuwe taak', duration: 5 });
-  saveTasks();
-  renderEditList();
-  // scroll to bottom
-  setTimeout(() => {
-    const panel = document.querySelector('.overlay-panel');
-    panel.scrollTop = panel.scrollHeight;
-    // focus the new input
-    const inputs = editList.querySelectorAll('.edit-name-input');
-    if (inputs.length) { inputs[inputs.length - 1].focus(); inputs[inputs.length - 1].select(); }
-  }, 50);
+/* Events */
+editToggleBtn.addEventListener('click', ()=>setEditMode(!editMode));
+addTaskBtn.addEventListener('click', ()=>{
+  tasks.push({name:'Nieuwe taak',duration:5}); saveTasks(); renderEditList();
+  setTimeout(()=>{ const p=document.querySelector('.overlay-panel'); p.scrollTop=p.scrollHeight; const ins=editList.querySelectorAll('.edit-name-input'); if(ins.length){ins[ins.length-1].focus();ins[ins.length-1].select();} },50);
 });
 
-/* ── Overlay ───────────────────────────────────────── */
-function openOverlay() {
-  overlay.classList.add('open');
-  editMode ? renderEditList() : renderList();
-}
+function openOverlay()  { overlay.classList.add('open'); editMode?renderEditList():renderList(); }
+function closeOverlay() { overlay.classList.remove('open'); if(editMode) setEditMode(false); }
 
-function closeOverlay() {
-  overlay.classList.remove('open');
-  if (editMode) setEditMode(false);
-}
-
-peekBtn.addEventListener('click', () => {
-  overlay.classList.contains('open') ? closeOverlay() : openOverlay();
-});
+peekBtn.addEventListener('click', ()=>overlay.classList.contains('open')?closeOverlay():openOverlay());
 overlayBackdrop.addEventListener('click', closeOverlay);
-
-focusArea.addEventListener('click', () => nextTask());
+focusArea.addEventListener('click', ()=>nextTask());
 restartBtn.addEventListener('click', restart);
+handleBtn.addEventListener('click', spinSlot);
 
-let touchStartY = 0;
-document.addEventListener('touchstart', (e) => { touchStartY = e.touches[0].clientY; }, { passive: true });
-document.addEventListener('touchend', (e) => {
-  // Don't swipe-advance if tapping inside overlay
-  if (overlay.classList.contains('open')) {
-    const dy = touchStartY - e.changedTouches[0].clientY;
-    if (dy < -60) closeOverlay();
-    return;
-  }
-  const dy = touchStartY - e.changedTouches[0].clientY;
-  if (dy > 60) openOverlay();
-}, { passive: true });
+let touchStartY=0;
+document.addEventListener('touchstart', e=>{ touchStartY=e.touches[0].clientY; },{passive:true});
+document.addEventListener('touchend', e=>{
+  if(overlay.classList.contains('open')){ if(touchStartY-e.changedTouches[0].clientY<-60) closeOverlay(); return; }
+  if(touchStartY-e.changedTouches[0].clientY>60) openOverlay();
+},{passive:true});
 
-/* ── Init ──────────────────────────────────────────── */
-renderTask(0, false);
+/* Init */
+renderTask(0,false);
+buildReels();
 </script>
 </body>
 </html>
