@@ -594,14 +594,26 @@ function renderList() {
 }
 
 /* ─────────────────────────────────────────
-   EDIT LIST
+   EDIT LIST — touch & mouse drag reorder
 ───────────────────────────────────────── */
+let dragSrcEl = null;
+
+function reorderTasks(fromIdx, toIdx) {
+  if (fromIdx === toIdx) return;
+  const moved = tasks.splice(fromIdx, 1)[0];
+  tasks.splice(toIdx, 0, moved);
+  if (fromIdx === currentIndex) currentIndex = toIdx;
+  else if (fromIdx < currentIndex && toIdx >= currentIndex) currentIndex--;
+  else if (fromIdx > currentIndex && toIdx <= currentIndex) currentIndex++;
+  saveTasks(); renderEditList(); syncFocus(currentIndex);
+}
+
 function renderEditList() {
   editList.innerHTML='';
   tasks.forEach((t,i)=>{
     const li=document.createElement('li');
-    li.className='edit-item'; li.draggable=true; li.dataset.index=i; li.style.animationDelay=(i*40)+'ms';
-    li.innerHTML=`<span class="drag-handle">⠿</span>
+    li.className='edit-item'; li.dataset.index=i; li.style.animationDelay=(i*40)+'ms';
+    li.innerHTML=`<span class="drag-handle" data-i="${i}">⠿</span>
       <div class="edit-fields">
         <input class="edit-name-input" type="text" value="${t.name}" placeholder="Task name" data-i="${i}">
         <div class="edit-duration-row">
@@ -610,6 +622,7 @@ function renderEditList() {
         </div>
       </div>
       <button class="delete-btn" data-i="${i}">×</button>`;
+
     li.querySelector('.edit-name-input').addEventListener('input',e=>{tasks[+e.target.dataset.i].name=e.target.value||'New task';saveTasks();syncFocus(+e.target.dataset.i);});
     li.querySelector('.edit-duration-input').addEventListener('input',e=>{tasks[+e.target.dataset.i].duration=Math.max(1,Math.min(120,parseInt(e.target.value)||1));saveTasks();syncFocus(+e.target.dataset.i);});
     li.querySelector('.delete-btn').addEventListener('click',e=>{
@@ -617,21 +630,92 @@ function renderEditList() {
       tasks.splice(idx,1); if(currentIndex>=tasks.length) currentIndex=tasks.length-1;
       saveTasks(); renderEditList(); syncFocus(currentIndex);
     });
-    li.addEventListener('dragstart',e=>{dragSrcIndex=i;setTimeout(()=>li.classList.add('dragging'),0);e.dataTransfer.effectAllowed='move';});
-    li.addEventListener('dragend',()=>li.classList.remove('dragging'));
-    li.addEventListener('dragover',e=>{e.preventDefault();li.classList.add('drag-over');});
-    li.addEventListener('dragleave',()=>li.classList.remove('drag-over'));
-    li.addEventListener('drop',e=>{
-      e.preventDefault();li.classList.remove('drag-over');
+
+    // ── Touch drag via handle ──
+    const handle = li.querySelector('.drag-handle');
+    handle.addEventListener('touchstart', onTouchStart, { passive: false });
+
+    // ── Mouse drag (desktop) ──
+    li.draggable = true;
+    li.addEventListener('dragstart', e => { dragSrcIndex=i; dragSrcEl=li; setTimeout(()=>li.classList.add('dragging'),0); e.dataTransfer.effectAllowed='move'; });
+    li.addEventListener('dragend',   () => { li.classList.remove('dragging'); document.querySelectorAll('.edit-item').forEach(el=>el.classList.remove('drag-over')); });
+    li.addEventListener('dragover',  e => { e.preventDefault(); if(li!==dragSrcEl) li.classList.add('drag-over'); });
+    li.addEventListener('dragleave', () => li.classList.remove('drag-over'));
+    li.addEventListener('drop', e => {
+      e.preventDefault(); li.classList.remove('drag-over');
       if(dragSrcIndex===null||dragSrcIndex===i) return;
-      const moved=tasks.splice(dragSrcIndex,1)[0]; tasks.splice(i,0,moved);
-      if(dragSrcIndex===currentIndex) currentIndex=i;
-      else if(dragSrcIndex<currentIndex&&i>=currentIndex) currentIndex--;
-      else if(dragSrcIndex>currentIndex&&i<=currentIndex) currentIndex++;
-      dragSrcIndex=null; saveTasks(); renderEditList(); syncFocus(currentIndex);
+      reorderTasks(dragSrcIndex, i);
     });
+
     editList.appendChild(li);
   });
+}
+
+/* ── Touch drag implementation ── */
+let touchDragIdx = null, touchClone = null, touchOffsetY = 0;
+
+function onTouchStart(e) {
+  e.preventDefault();
+  const handle = e.currentTarget;
+  const li = handle.closest('.edit-item');
+  touchDragIdx = +li.dataset.index;
+
+  const rect = li.getBoundingClientRect();
+  touchOffsetY = e.touches[0].clientY - rect.top;
+
+  // Create floating clone
+  touchClone = li.cloneNode(true);
+  touchClone.style.cssText = `
+    position:fixed; left:${rect.left}px; top:${rect.top}px;
+    width:${rect.width}px; z-index:999; opacity:0.92;
+    background:rgba(34,34,36,0.95); border-radius:6px;
+    box-shadow:0 8px 32px rgba(0,0,0,0.5);
+    pointer-events:none; transition:none;
+  `;
+  document.body.appendChild(touchClone);
+  li.style.opacity = '0.25';
+
+  document.addEventListener('touchmove', onTouchMove, { passive: false });
+  document.addEventListener('touchend',  onTouchEnd);
+}
+
+function onTouchMove(e) {
+  e.preventDefault();
+  if (!touchClone) return;
+  const y = e.touches[0].clientY - touchOffsetY;
+  touchClone.style.top = y + 'px';
+
+  // Highlight target
+  document.querySelectorAll('.edit-item').forEach(el => el.classList.remove('drag-over'));
+  const els = [...editList.querySelectorAll('.edit-item')];
+  for (const el of els) {
+    const r = el.getBoundingClientRect();
+    if (e.touches[0].clientY > r.top && e.touches[0].clientY < r.bottom) {
+      if (+el.dataset.index !== touchDragIdx) el.classList.add('drag-over');
+      break;
+    }
+  }
+}
+
+function onTouchEnd(e) {
+  document.removeEventListener('touchmove', onTouchMove);
+  document.removeEventListener('touchend',  onTouchEnd);
+
+  if (touchClone) { touchClone.remove(); touchClone = null; }
+
+  // Find drop target
+  const els = [...editList.querySelectorAll('.edit-item')];
+  let toIdx = touchDragIdx;
+  for (const el of els) {
+    el.classList.remove('drag-over');
+    const r = el.getBoundingClientRect();
+    if (e.changedTouches[0].clientY > r.top && e.changedTouches[0].clientY < r.bottom) {
+      toIdx = +el.dataset.index; break;
+    }
+  }
+
+  reorderTasks(touchDragIdx, toIdx);
+  touchDragIdx = null;
 }
 
 function syncFocus(idx) {
