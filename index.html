@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="nl">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -7,27 +7,44 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@200;300;400&family=DM+Serif+Display:ital@1&display=swap" rel="stylesheet">
 <style>
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
   :root {
-    --bg: #0e0e0f; --surface: rgba(255,255,255,0.04);
-    --amber: #FFB347; --amber-dim: rgba(255,179,71,0.15);
-    --text: #f0ece6; --muted: rgba(240,236,230,0.3); --border: rgba(255,255,255,0.07);
+    --bg:#0e0e0f; --surface:rgba(255,255,255,0.04);
+    --amber:#FFB347; --amber-dim:rgba(255,179,71,0.15);
+    --text:#f0ece6; --muted:rgba(240,236,230,0.3); --border:rgba(255,255,255,0.07);
   }
-  html, body { height:100%; width:100%; overflow:hidden; background:var(--bg); color:var(--text); font-family:'DM Sans',sans-serif; -webkit-font-smoothing:antialiased; }
+  html,body { height:100%; width:100%; overflow:hidden; background:var(--bg); color:var(--text); font-family:'DM Sans',sans-serif; -webkit-font-smoothing:antialiased; }
   body::before { content:''; position:fixed; inset:0; background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E"); pointer-events:none; z-index:0; }
 
-  /* Flash */
+  /* ── Flash ── */
   #flash { position:fixed; inset:0; background:radial-gradient(ellipse at center,rgba(255,179,71,0.18) 0%,rgba(255,179,71,0.04) 60%,transparent 100%); pointer-events:none; z-index:100; opacity:0; }
   #flash.fire { animation:amberFlash 0.6s cubic-bezier(0.22,1,0.36,1) forwards; }
   @keyframes amberFlash { 0%{opacity:0} 15%{opacity:1} 100%{opacity:0} }
 
-  /* Layout */
+  /* ── App shell ── */
   #app { position:relative; height:100%; display:flex; flex-direction:column; z-index:1; }
-  .header { display:flex; justify-content:space-between; align-items:center; padding:48px 32px 0; transition:opacity 0.4s; }
+
+  /* ── Header ── */
+  .header { position:absolute; top:0; left:0; right:0; display:flex; justify-content:space-between; align-items:center; padding:48px 32px 0; transition:opacity 0.4s; z-index:2; pointer-events:none; }
+  .header > *, .header * { pointer-events:all; }
   .logo { font-family:'DM Serif Display',serif; font-style:italic; font-size:1.1rem; letter-spacing:0.05em; color:var(--amber); opacity:0.8; }
+  .header-right { display:flex; align-items:center; gap:14px; }
   .step-counter { font-size:0.75rem; font-weight:300; letter-spacing:0.15em; color:var(--muted); text-transform:uppercase; }
 
-  /* Focus */
+  /* Streak badge in header */
+  .streak-badge {
+    display:flex; align-items:center; gap:5px;
+    font-size:0.72rem; font-weight:300; letter-spacing:0.1em;
+    color:var(--muted); cursor:pointer;
+    -webkit-tap-highlight-color:transparent;
+    transition:color 0.3s;
+  }
+  .streak-badge.active { color:var(--amber); }
+  .streak-badge .flame { font-size:0.85rem; display:inline-block; }
+  .streak-badge.active .flame { animation:flamePop 0.4s cubic-bezier(0.34,1.56,0.64,1); }
+  @keyframes flamePop { 0%{transform:scale(0.6)} 60%{transform:scale(1.3)} 100%{transform:scale(1)} }
+
+  /* ── Focus area ── */
   .focus-area { flex:1; display:flex; flex-direction:column; justify-content:center; align-items:center; padding:0 32px; cursor:pointer; user-select:none; -webkit-tap-highlight-color:transparent; }
   .task-label { font-size:clamp(2.8rem,12vw,5.5rem); font-weight:200; letter-spacing:-0.02em; line-height:1.1; text-align:center; color:var(--text); transition:opacity 0.5s ease,transform 0.5s ease; text-transform:uppercase; }
   .task-label.fade-out { opacity:0; transform:translateY(-16px); }
@@ -35,60 +52,52 @@
   .tap-hint { position:absolute; bottom:130px; left:50%; transform:translateX(-50%); font-size:0.65rem; letter-spacing:0.2em; color:var(--muted); text-transform:uppercase; animation:pulse 3s ease-in-out infinite; white-space:nowrap; }
   @keyframes pulse { 0%,100%{opacity:0.3} 50%{opacity:0.7} }
 
-  /* Completion */
-  .completion { display:none; flex-direction:column; justify-content:center; align-items:center; height:100%; text-align:center; padding:20px 32px; }
-  .completion.visible { display:flex; }
-  .completion-top { margin-bottom:28px; }
-  .completion-top .big-check { font-size:2.6rem; margin-bottom:10px; display:block; animation:popIn 0.5s cubic-bezier(0.34,1.56,0.64,1); }
-  .completion-top h2 { font-size:1.4rem; font-weight:200; letter-spacing:0.1em; text-transform:uppercase; margin-bottom:6px; }
-  .completion-top p { font-size:0.7rem; color:var(--muted); letter-spacing:0.15em; text-transform:uppercase; }
-  @keyframes popIn { from{transform:scale(0);opacity:0} to{transform:scale(1);opacity:1} }
-
-  /* Slot machine */
-  .slot-machine { display:flex; flex-direction:column; align-items:center; gap:16px; }
-  .slot-label { font-size:0.58rem; letter-spacing:0.28em; text-transform:uppercase; color:var(--muted); }
-  .slot-reels { display:flex; gap:8px; }
-  .reel-wrap { width:70px; height:80px; overflow:hidden; border:1px solid var(--border); border-radius:10px; background:rgba(255,255,255,0.02); position:relative; transition:border-color 0.4s,box-shadow 0.4s; }
-  .reel-wrap::before,.reel-wrap::after { content:''; position:absolute; left:0; right:0; height:22px; z-index:2; pointer-events:none; }
-  .reel-wrap::before { top:0; background:linear-gradient(to bottom,#0e0e0f,transparent); }
-  .reel-wrap::after  { bottom:0; background:linear-gradient(to top,#0e0e0f,transparent); }
-  .reel-line { position:absolute; left:8px; right:8px; top:50%; transform:translateY(-50%); height:1px; background:rgba(255,179,71,0.25); z-index:3; pointer-events:none; }
-  .reel { display:flex; flex-direction:column; align-items:center; will-change:transform; }
-  .reel-item { width:70px; height:80px; display:flex; align-items:center; justify-content:center; font-size:2rem; flex-shrink:0; }
-  .reel-wrap.win-glow { border-color:rgba(255,179,71,0.6); box-shadow:0 0 20px rgba(255,179,71,0.35); animation:winPulse 1.2s ease-in-out infinite; }
-  @keyframes winPulse { 0%,100%{box-shadow:0 0 16px rgba(255,179,71,0.3)} 50%{box-shadow:0 0 32px rgba(255,179,71,0.65)} }
-
-  .slot-handle-wrap { display:flex; flex-direction:column; align-items:center; gap:8px; }
-  .handle-btn { width:54px; height:54px; border-radius:50%; background:none; border:1.5px solid var(--amber); color:var(--amber); font-size:1.4rem; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all 0.2s; box-shadow:0 0 16px rgba(255,179,71,0.15); -webkit-tap-highlight-color:transparent; }
-  .handle-btn:hover { background:rgba(255,179,71,0.08); box-shadow:0 0 28px rgba(255,179,71,0.3); }
-  .handle-btn:active { transform:scale(0.9) translateY(3px); }
-  .handle-btn.spinning { pointer-events:none; opacity:0.4; }
-  .handle-btn.used { border-color:var(--border); color:var(--muted); box-shadow:none; pointer-events:none; cursor:default; }
-  .handle-hint { font-size:0.58rem; letter-spacing:0.2em; text-transform:uppercase; color:var(--muted); }
-
-  .slot-result { font-size:0.68rem; letter-spacing:0.22em; text-transform:uppercase; min-height:1.1em; transition:all 0.4s; color:transparent; }
-  .slot-result.win  { color:var(--amber); }
-  .slot-result.lose { color:var(--muted); }
-
-  .restart-btn { margin-top:20px; padding:13px 28px; background:none; border:1px solid var(--border); color:var(--muted); font-family:inherit; font-size:0.72rem; letter-spacing:0.2em; text-transform:uppercase; cursor:pointer; border-radius:2px; transition:all 0.3s; }
-  .restart-btn:hover { border-color:var(--amber); color:var(--amber); }
-
-  /* Progress */
-  .progress-wrap { padding:0 32px 32px; }
+  /* ── Progress bar ── */
+  .progress-wrap { padding:0; }
   .progress-track { width:100%; height:1px; background:var(--border); border-radius:1px; overflow:visible; position:relative; }
   .progress-fill { height:1px; background:var(--amber); border-radius:1px; transition:width 1s linear; box-shadow:0 0 8px rgba(255,179,71,0.5); }
   .progress-dot { position:absolute; right:-3px; top:-3px; width:7px; height:7px; border-radius:50%; background:var(--amber); box-shadow:0 0 10px var(--amber); }
 
-  /* Peek btn */
+  /* ── Completion screen ── */
+  .completion { display:none; flex-direction:column; justify-content:flex-start; align-items:center; height:100%; text-align:center; padding:32px 32px 40px; gap:0; overflow-y:auto; }
+  .completion.visible { display:flex; }
+
+  .completion-check { font-size:2.2rem; margin-bottom:8px; display:block; animation:popIn 0.5s cubic-bezier(0.34,1.56,0.64,1); margin-top:24px; }
+  .completion-title { font-size:1.4rem; font-weight:200; letter-spacing:0.1em; text-transform:uppercase; margin-bottom:4px; }
+  .completion-sub { font-size:0.7rem; color:var(--muted); letter-spacing:0.15em; text-transform:uppercase; margin-bottom:24px; }
+
+  @keyframes popIn { from{transform:scale(0);opacity:0} to{transform:scale(1);opacity:1} }
+
+  .streak-display { display:flex; flex-direction:column; align-items:center; gap:4px; margin-bottom:20px; }
+  .streak-flame-big { font-size:2.8rem; line-height:1; animation:flameFloat 2s ease-in-out infinite; filter:drop-shadow(0 0 12px rgba(255,179,71,0.5)); }
+  @keyframes flameFloat { 0%,100%{transform:translateY(0) scale(1)} 50%{transform:translateY(-5px) scale(1.05)} }
+  .streak-count-big { font-size:2.6rem; font-weight:200; letter-spacing:-0.02em; color:var(--amber); animation:popIn 0.6s 0.2s cubic-bezier(0.34,1.56,0.64,1) both; }
+  .streak-label { font-size:0.62rem; letter-spacing:0.25em; text-transform:uppercase; color:var(--muted); }
+
+  /* Milestone card */
+  .milestone-card { width:100%; max-width:300px; border:1px solid var(--border); border-radius:10px; padding:14px 18px; margin-bottom:20px; background:var(--surface); animation:popIn 0.5s 0.4s cubic-bezier(0.34,1.56,0.64,1) both; }
+  .milestone-card .mc-label { font-size:0.58rem; letter-spacing:0.25em; text-transform:uppercase; color:var(--muted); margin-bottom:6px; }
+  .milestone-card .mc-next { font-size:0.88rem; font-weight:300; color:var(--text); letter-spacing:0.03em; }
+  .milestone-card .mc-next span { color:var(--amber); }
+  .milestone-card .mc-reward { font-size:0.75rem; font-weight:300; color:var(--muted); margin-top:4px; letter-spacing:0.02em; font-style:italic; }
+  .milestone-card.achieved { border-color:rgba(255,179,71,0.4); background:rgba(255,179,71,0.06); }
+  .milestone-card.achieved .mc-label { color:var(--amber); }
+
+  .restart-btn { padding:13px 28px; background:none; border:1px solid var(--border); color:var(--muted); font-family:inherit; font-size:0.72rem; letter-spacing:0.2em; text-transform:uppercase; cursor:pointer; border-radius:2px; transition:all 0.3s; }
+  .restart-btn:hover { border-color:var(--amber); color:var(--amber); }
+  .home-btn { margin-top:10px; padding:10px 24px; background:none; border:none; color:var(--muted); font-family:inherit; font-size:0.68rem; letter-spacing:0.15em; text-transform:uppercase; cursor:pointer; border-radius:2px; transition:color 0.3s; opacity:0.6; }
+  .home-btn:hover { color:var(--text); opacity:1; }
+
+  /* ── Peek button ── */
   .peek-btn { position:fixed; bottom:40px; right:32px; width:40px; height:40px; border-radius:50%; background:var(--surface); border:1px solid var(--border); display:flex; align-items:center; justify-content:center; cursor:pointer; z-index:10; transition:all 0.3s; -webkit-tap-highlight-color:transparent; backdrop-filter:blur(10px); }
   .peek-btn:hover { border-color:var(--amber); }
   .peek-btn svg { width:16px; height:16px; stroke:var(--muted); transition:stroke 0.3s; }
   .peek-btn:hover svg { stroke:var(--amber); }
 
-  /* Overlay */
+  /* ── Overlay ── */
   .overlay { position:fixed; inset:0; z-index:20; pointer-events:none; display:flex; flex-direction:column; justify-content:flex-end; }
   .overlay-backdrop { position:absolute; inset:0; background:rgba(14,14,15,0.6); opacity:0; transition:opacity 0.4s ease; }
-  .overlay-panel { position:relative; background:rgba(22,22,24,0.85); backdrop-filter:blur(24px) saturate(180%); -webkit-backdrop-filter:blur(24px) saturate(180%); border-top:1px solid var(--border); border-radius:20px 20px 0 0; padding:28px 32px 48px; transform:translateY(100%); transition:transform 0.45s cubic-bezier(0.32,0.72,0,1); max-height:70vh; overflow-y:auto; }
+  .overlay-panel { position:relative; background:rgba(22,22,24,0.88); backdrop-filter:blur(24px) saturate(180%); -webkit-backdrop-filter:blur(24px) saturate(180%); border-top:1px solid var(--border); border-radius:20px 20px 0 0; padding:28px 32px 48px; transform:translateY(100%); transition:transform 0.45s cubic-bezier(0.32,0.72,0,1); max-height:80vh; overflow-y:auto; }
   .overlay.open { pointer-events:all; }
   .overlay.open .overlay-backdrop { opacity:1; }
   .overlay.open .overlay-panel { transform:translateY(0); }
@@ -98,7 +107,15 @@
   .edit-toggle-btn { background:none; border:1px solid var(--border); color:var(--muted); font-family:inherit; font-size:0.6rem; letter-spacing:0.2em; text-transform:uppercase; padding:6px 12px; border-radius:2px; cursor:pointer; transition:all 0.25s; }
   .edit-toggle-btn:hover,.edit-toggle-btn.active { border-color:var(--amber); color:var(--amber); }
 
-  /* Task list */
+  /* ── Tab bar inside overlay ── */
+  .overlay-tabs { display:flex; gap:0; margin-bottom:24px; border-bottom:1px solid var(--border); }
+  .overlay-tab { flex:1; padding:10px 0; background:none; border:none; color:var(--muted); font-family:inherit; font-size:0.65rem; letter-spacing:0.2em; text-transform:uppercase; cursor:pointer; transition:color 0.2s; position:relative; }
+  .overlay-tab.active { color:var(--amber); }
+  .overlay-tab.active::after { content:''; position:absolute; bottom:-1px; left:0; right:0; height:1px; background:var(--amber); }
+  .tab-panel { display:none; }
+  .tab-panel.active { display:block; }
+
+  /* ── Task list ── */
   .task-list { list-style:none; }
   .task-item { display:flex; align-items:center; gap:16px; padding:14px 0; border-bottom:1px solid var(--border); transition:opacity 0.3s; }
   .task-item:last-child { border-bottom:none; }
@@ -109,7 +126,7 @@
   .task-item.active .task-indicator::after { content:''; display:block; width:6px; height:6px; border-radius:50%; background:var(--amber); }
   .task-item.future .task-indicator { border:1.5px solid rgba(255,255,255,0.15); }
   .task-info { flex:1; }
-  .task-name { font-size:0.9rem; font-weight:300; letter-spacing:0.05em; transition:color 0.3s; }
+  .task-name { font-size:0.9rem; font-weight:300; letter-spacing:0.05em; }
   .task-time { font-size:0.65rem; letter-spacing:0.15em; color:var(--muted); margin-top:2px; }
   .task-item.done .task-name { text-decoration:line-through; color:var(--muted); }
   .task-item.done { opacity:0.5; }
@@ -118,7 +135,7 @@
   .task-item.active { position:relative; padding-left:8px; }
   .task-item.active::before { content:''; position:absolute; left:-32px; top:0; bottom:0; width:2px; background:var(--amber); }
 
-  /* Edit */
+  /* ── Edit mode ── */
   .edit-list { list-style:none; display:none; }
   .edit-list.visible { display:block; }
   .task-list.hidden { display:none; }
@@ -129,24 +146,78 @@
   .drag-handle:hover { opacity:0.8; }
   .drag-handle:active { cursor:grabbing; }
   .edit-fields { flex:1; display:flex; flex-direction:column; gap:6px; }
-  .edit-name-input { background:rgba(255,255,255,0.04); border:1px solid var(--border); border-radius:4px; color:var(--text); font-family:inherit; font-size:0.85rem; font-weight:300; letter-spacing:0.03em; padding:7px 10px; width:100%; outline:none; transition:border-color 0.2s; }
+  .edit-name-input { background:rgba(255,255,255,0.04); border:1px solid var(--border); border-radius:4px; color:var(--text); font-family:inherit; font-size:0.85rem; font-weight:300; padding:7px 10px; width:100%; outline:none; transition:border-color 0.2s; }
   .edit-name-input:focus { border-color:rgba(255,179,71,0.5); }
   .edit-name-input::placeholder { color:var(--muted); }
   .edit-duration-row { display:flex; align-items:center; gap:8px; }
   .edit-duration-label { font-size:0.6rem; letter-spacing:0.15em; text-transform:uppercase; color:var(--muted); white-space:nowrap; }
-  .edit-duration-input { background:rgba(255,255,255,0.04); border:1px solid var(--border); border-radius:4px; color:var(--text); font-family:inherit; font-size:0.8rem; font-weight:300; padding:5px 8px; width:56px; outline:none; transition:border-color 0.2s; text-align:center; }
+  .edit-duration-input { background:rgba(255,255,255,0.04); border:1px solid var(--border); border-radius:4px; color:var(--text); font-family:inherit; font-size:0.8rem; padding:5px 8px; width:56px; outline:none; transition:border-color 0.2s; text-align:center; }
   .edit-duration-input:focus { border-color:rgba(255,179,71,0.5); }
   .delete-btn { background:none; border:none; color:rgba(255,255,255,0.2); cursor:pointer; font-size:1.1rem; padding:4px; line-height:1; flex-shrink:0; transition:color 0.2s; border-radius:4px; }
   .delete-btn:hover { color:#ff6b6b; }
   .add-task-btn { display:flex; align-items:center; gap:10px; width:100%; margin-top:16px; padding:12px 0; background:none; border:1px dashed var(--border); border-radius:4px; color:var(--muted); font-family:inherit; font-size:0.75rem; letter-spacing:0.15em; text-transform:uppercase; cursor:pointer; justify-content:center; transition:all 0.25s; }
   .add-task-btn:hover { border-color:rgba(255,179,71,0.4); color:var(--amber); }
   .edit-item.drag-over { opacity:0.4; }
-  .edit-item.dragging  { opacity:0.15; }
+  .edit-item.dragging { opacity:0.15; }
+
+  /* ── Milestones tab ── */
+  .milestones-list { list-style:none; }
+  .milestone-item {
+    display:flex; align-items:center; gap:14px;
+    padding:14px 0; border-bottom:1px solid var(--border);
+  }
+  .milestone-item:last-child { border-bottom:none; }
+
+  .milestone-icon {
+    flex-shrink:0; width:36px; height:36px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    font-size:1rem; border:1.5px solid var(--border);
+    transition:all 0.3s;
+  }
+  .milestone-item.reached .milestone-icon {
+    border-color:var(--amber); background:var(--amber-dim);
+    box-shadow:0 0 10px rgba(255,179,71,0.25);
+  }
+  .milestone-item.next .milestone-icon {
+    border-color:rgba(255,179,71,0.35);
+  }
+
+  .milestone-info { flex:1; }
+  .milestone-days {
+    font-size:0.8rem; font-weight:300; letter-spacing:0.05em;
+    color:var(--muted); margin-bottom:4px;
+  }
+  .milestone-item.reached .milestone-days { color:var(--amber); }
+  .milestone-item.next .milestone-days { color:rgba(240,236,230,0.6); }
+
+  .milestone-reward-input {
+    background:transparent; border:none; border-bottom:1px solid var(--border);
+    color:var(--text); font-family:inherit; font-size:0.78rem; font-weight:300;
+    font-style:italic; letter-spacing:0.02em; width:100%; outline:none;
+    padding:2px 0; transition:border-color 0.2s;
+  }
+  .milestone-reward-input:focus { border-color:rgba(255,179,71,0.5); }
+  .milestone-reward-input::placeholder { color:rgba(240,236,230,0.2); font-style:italic; }
+  .milestone-item.reached .milestone-reward-input { color:var(--muted); }
+
+  /* Progress bar inside milestone */
+  .milestone-progress-wrap { margin-top:5px; }
+  .milestone-progress-track { height:1px; background:var(--border); border-radius:1px; overflow:hidden; }
+  .milestone-progress-fill { height:1px; background:var(--amber); opacity:0.5; border-radius:1px; transition:width 0.6s ease; }
+
+  .streak-info-row {
+    display:flex; align-items:center; justify-content:space-between;
+    padding:16px 0; border-bottom:1px solid var(--border); margin-bottom:4px;
+  }
+  .streak-info-label { font-size:0.6rem; letter-spacing:0.2em; text-transform:uppercase; color:var(--muted); }
+  .streak-info-value { font-size:1rem; font-weight:200; color:var(--amber); }
+
+  /* Scrollbar */
   .overlay-panel::-webkit-scrollbar { width:3px; }
   .overlay-panel::-webkit-scrollbar-track { background:transparent; }
   .overlay-panel::-webkit-scrollbar-thumb { background:var(--border); border-radius:2px; }
 
-  .main-content { transition:opacity 0.4s; }
+  .main-content { transition:opacity 0.4s; flex:1; display:flex; flex-direction:column; }
   .main-content.hidden { opacity:0; pointer-events:none; }
   @media(min-width:480px){ .task-label{font-size:clamp(3rem,8vw,5.5rem)} }
 </style>
@@ -156,84 +227,179 @@
 <div id="flash"></div>
 
 <div id="app">
+  <!-- Header -->
   <div class="header" id="header">
     <span class="logo">Dawn</span>
-    <span class="step-counter" id="stepCounter">1 / 4</span>
+    <div class="header-right">
+      <div class="streak-badge" id="streakBadge" title="View streaks">
+        <span class="flame">🔥</span>
+        <span id="streakBadgeCount">0</span>
+      </div>
+      <span class="step-counter" id="stepCounter">1 / 4</span>
+    </div>
   </div>
 
+  <!-- Focus -->
   <div class="main-content" id="mainContent">
     <div class="focus-area" id="focusArea">
       <div class="task-label" id="taskLabel"></div>
       <div class="task-duration" id="taskDuration"></div>
-      <div class="tap-hint" id="tapHint">Tik om door te gaan</div>
+      <div class="progress-wrap" id="progressWrap" style="width:100%; margin-top:40px;">
+        <div class="progress-track">
+          <div class="progress-fill" id="progressFill" style="width:0%">
+            <div class="progress-dot"></div>
+          </div>
+        </div>
+      </div>
+      <div class="tap-hint" id="tapHint">Tap to continue</div>
     </div>
   </div>
 
+  <!-- Completion -->
   <div class="completion" id="completionScreen">
-    <div class="completion-top">
-      <span class="big-check">✦</span>
-      <h2>Routine Voltooid</h2>
-      <p>Jouw beloning wacht</p>
+    <span class="completion-check">✦</span>
+    <div class="completion-title">Routine Complete</div>
+    <div class="completion-sub" id="completionSub">Great start to the day</div>
+
+    <div class="streak-display">
+      <div class="streak-flame-big">🔥</div>
+      <div class="streak-count-big" id="streakCountBig">0</div>
+      <div class="streak-label">day streak</div>
     </div>
 
-    <div class="slot-machine">
-      <div class="slot-label">Trek aan de hendel</div>
-      <div class="slot-reels">
-        <div class="reel-wrap" id="reel0"><div class="reel-line"></div><div class="reel" id="ri0"></div></div>
-        <div class="reel-wrap" id="reel1"><div class="reel-line"></div><div class="reel" id="ri1"></div></div>
-        <div class="reel-wrap" id="reel2"><div class="reel-line"></div><div class="reel" id="ri2"></div></div>
-      </div>
-      <div class="slot-handle-wrap">
-        <button class="handle-btn" id="handleBtn">🎰</button>
-        <span class="handle-hint">Tik om te draaien</span>
-      </div>
-      <div class="slot-result" id="slotResult"></div>
+    <div class="milestone-card" id="milestoneCard">
+      <div class="mc-label" id="mcLabel">Next milestone</div>
+      <div class="mc-next" id="mcNext"></div>
+      <div class="mc-reward" id="mcReward"></div>
     </div>
 
-    <button class="restart-btn" id="restartBtn">Nieuwe dag beginnen</button>
+    <button class="restart-btn" id="restartBtn">Start a new day</button>
   </div>
 
-  <div class="progress-wrap" id="progressWrap">
-    <div class="progress-track">
-      <div class="progress-fill" id="progressFill" style="width:0%">
-        <div class="progress-dot"></div>
-      </div>
-    </div>
-  </div>
+
 </div>
 
-<button class="peek-btn" id="peekBtn" aria-label="Bekijk lijst">
+<!-- Peek button -->
+<button class="peek-btn" id="peekBtn" aria-label="View list">
   <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
     <path d="M4 6h16M4 12h16M4 18h10"/>
   </svg>
 </button>
 
+<!-- Overlay -->
 <div class="overlay" id="overlay">
   <div class="overlay-backdrop" id="overlayBackdrop"></div>
   <div class="overlay-panel">
     <div class="overlay-handle"></div>
     <div class="overlay-header">
-      <div class="overlay-title">Ochtend Routine</div>
-      <button class="edit-toggle-btn" id="editToggleBtn">Bewerken</button>
+      <div class="overlay-title" id="overlayTitle">Morning Routine</div>
+      <button class="edit-toggle-btn" id="editToggleBtn">Edit</button>
     </div>
-    <ul class="task-list" id="taskList"></ul>
-    <ul class="edit-list" id="editList"></ul>
-    <button class="add-task-btn" id="addTaskBtn" style="display:none">+ Taak toevoegen</button>
+
+    <!-- Tabs -->
+    <div class="overlay-tabs">
+      <button class="overlay-tab active" data-tab="tasks">Tasks</button>
+      <button class="overlay-tab" data-tab="milestones">Milestones</button>
+    </div>
+
+    <!-- Tasks tab -->
+    <div class="tab-panel active" id="tab-tasks">
+      <ul class="task-list" id="taskList"></ul>
+      <ul class="edit-list" id="editList"></ul>
+      <button class="add-task-btn" id="addTaskBtn" style="display:none">+ Add task</button>
+    </div>
+
+    <!-- Milestones tab -->
+    <div class="tab-panel" id="tab-milestones">
+      <div class="streak-info-row">
+        <span class="streak-info-label">Current streak</span>
+        <span class="streak-info-value" id="streakInfoValue">🔥 0 days</span>
+      </div>
+      <div class="streak-info-row" style="border-bottom:none; padding-bottom:20px;">
+        <span class="streak-info-label">Longest streak</span>
+        <span class="streak-info-value" id="longestInfoValue">0 days</span>
+      </div>
+      <ul class="milestones-list" id="milestonesList"></ul>
+    </div>
   </div>
 </div>
 
 <script>
+/* ─────────────────────────────────────────
+   DATA & STORAGE
+───────────────────────────────────────── */
 const DEFAULT_TASKS = [
-  { name: 'Opstaan & Bed Opmaken', duration: 2 },
-  { name: 'Mediteren',             duration: 10 },
-  { name: 'Drink 500ml Water',     duration: 1  },
-  { name: 'Yoga / Stretch',        duration: 15 },
+  { name: 'Wake Up & Make Bed', duration: 2 },
+  { name: 'Meditate',           duration: 10 },
+  { name: 'Drink 500ml Water',  duration: 1  },
+  { name: 'Yoga / Stretch',     duration: 15 },
 ];
-function loadTasks() { try { const s = localStorage.getItem('dawn-tasks'); return s ? JSON.parse(s) : DEFAULT_TASKS; } catch { return DEFAULT_TASKS; } }
-function saveTasks() { try { localStorage.setItem('dawn-tasks', JSON.stringify(tasks)); } catch {} }
-let tasks = loadTasks();
-let currentIndex = 0, timer = null, elapsed = 0, editMode = false, dragSrcIndex = null, slotUsed = false;
 
+const MILESTONE_DAYS = [3, 7, 14, 30, 60, 100];
+const MILESTONE_ICONS = ['🌱','⚡','🌙','🏆','💎','👑'];
+
+function load(key, fallback) {
+  try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; } catch { return fallback; }
+}
+function save(key, val) {
+  try { localStorage.setItem(key, JSON.stringify(val)); } catch {}
+}
+
+let tasks     = load('dawn-tasks', DEFAULT_TASKS);
+let streak    = load('dawn-streak', { count: 0, longest: 0, lastDate: null });
+let rewards   = load('dawn-rewards', {}); // { "3": "...", "7": "...", ... }
+
+function saveTasks()   { save('dawn-tasks', tasks); }
+function saveStreak()  { save('dawn-streak', streak); }
+function saveRewards() { save('dawn-rewards', rewards); }
+
+/* ─────────────────────────────────────────
+   STREAK LOGIC
+───────────────────────────────────────── */
+function todayStr() {
+  return new Date().toISOString().slice(0, 10); // "2025-03-15"
+}
+
+function checkAndUpdateStreak() {
+  const today = todayStr();
+  if (streak.lastDate === today) return; // already done today
+
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+  const yStr = yesterday.toISOString().slice(0, 10);
+
+  if (streak.lastDate === yStr) {
+    // consecutive day
+    streak.count++;
+  } else if (streak.lastDate === null || streak.lastDate < yStr) {
+    // missed a day or first time
+    streak.count = 1;
+  }
+
+  streak.lastDate = today;
+  if (streak.count > streak.longest) streak.longest = streak.count;
+  saveStreak();
+}
+
+function getNextMilestone() {
+  for (const m of MILESTONE_DAYS) {
+    if (streak.count < m) return m;
+  }
+  return null; // all milestones reached
+}
+
+function isStreakAlive() {
+  if (!streak.lastDate) return false;
+  const today = todayStr();
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+  const yStr = yesterday.toISOString().slice(0, 10);
+  return streak.lastDate === today || streak.lastDate === yStr;
+}
+
+/* ─────────────────────────────────────────
+   DOM REFS
+───────────────────────────────────────── */
 const $ = id => document.getElementById(id);
 const taskLabel=$('taskLabel'), taskDuration=$('taskDuration'), stepCounter=$('stepCounter');
 const progressFill=$('progressFill'), mainContent=$('mainContent'), completionScreen=$('completionScreen');
@@ -241,155 +407,169 @@ const progressWrap=$('progressWrap'), header=$('header'), tapHint=$('tapHint');
 const overlay=$('overlay'), overlayBackdrop=$('overlayBackdrop'), peekBtn=$('peekBtn');
 const taskList=$('taskList'), editList=$('editList'), addTaskBtn=$('addTaskBtn');
 const editToggleBtn=$('editToggleBtn'), restartBtn=$('restartBtn'), focusArea=$('focusArea');
-const flashEl=$('flash'), handleBtn=$('handleBtn'), slotResult=$('slotResult');
+const flashEl=$('flash');
+const streakBadge=$('streakBadge'), streakBadgeCount=$('streakBadgeCount');
+const streakCountBig=$('streakCountBig'), milestoneCard=$('milestoneCard');
+const mcLabel=$('mcLabel'), mcNext=$('mcNext'), mcReward=$('mcReward');
+const completionSub=$('completionSub');
+const milestonesList=$('milestonesList');
+const streakInfoValue=$('streakInfoValue'), longestInfoValue=$('longestInfoValue');
 
-/* Audio */
-let audioCtx = null;
-function ctx() { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); return audioCtx; }
-function tone(freq, start, dur, vol=0.15, type='sine') {
+let currentIndex=0, timer=null, elapsed=0, editMode=false, dragSrcIndex=null;
+
+/* ─────────────────────────────────────────
+   AUDIO
+───────────────────────────────────────── */
+let audioCtx=null;
+function getCtx() { if(!audioCtx) audioCtx=new(window.AudioContext||window.webkitAudioContext)(); return audioCtx; }
+function tone(freq,start,dur,vol=0.15,type='sine') {
   try {
-    const c=ctx(), o=c.createOscillator(), g=c.createGain();
-    o.connect(g); g.connect(c.destination);
-    o.type=type; o.frequency.value=freq;
-    g.gain.setValueAtTime(0, c.currentTime+start);
-    g.gain.linearRampToValueAtTime(vol, c.currentTime+start+0.02);
-    g.gain.exponentialRampToValueAtTime(0.001, c.currentTime+start+dur);
+    const c=getCtx(),o=c.createOscillator(),g=c.createGain();
+    o.connect(g); g.connect(c.destination); o.type=type; o.frequency.value=freq;
+    g.gain.setValueAtTime(0,c.currentTime+start);
+    g.gain.linearRampToValueAtTime(vol,c.currentTime+start+0.02);
+    g.gain.exponentialRampToValueAtTime(0.001,c.currentTime+start+dur);
     o.start(c.currentTime+start); o.stop(c.currentTime+start+dur);
   } catch {}
 }
-function playClick()    { tone(880,0,0.06,0.14); }
-function playChime()    { [[523.25,0],[659.25,0.15],[783.99,0.3]].forEach(([f,d])=>tone(f,d,0.5)); }
-function playWin()      { [[523.25,0],[659.25,0.1],[783.99,0.2],[1046.5,0.32]].forEach(([f,d])=>tone(f,d,0.5,0.13)); }
-function playLose()     { [440,350].forEach((f,i)=>tone(f,i*0.18,0.28,0.1)); }
-function playTick()     { tone(600,0,0.04,0.05); }
+function playClick()  { tone(880,0,0.06,0.14); }
+function playChime()  { [[523.25,0],[659.25,0.15],[783.99,0.3]].forEach(([f,d])=>tone(f,d,0.5)); }
+function playMilestone() {
+  [[523.25,0],[659.25,0.1],[783.99,0.2],[1046.5,0.32],[1318.5,0.46]].forEach(([f,d])=>tone(f,d,0.6,0.13));
+}
 
-function haptic(p=12) { if (navigator.vibrate) navigator.vibrate(p); }
+function haptic(p=12) { if(navigator.vibrate) navigator.vibrate(p); }
 function triggerFlash() { flashEl.classList.remove('fire'); void flashEl.offsetWidth; flashEl.classList.add('fire'); }
 
-/* Slot */
-const SYMBOLS = ['🍋','🍒','🍇','⭐','🍀','🔔'];
-
-function buildReels() {
-  for (let i=0; i<3; i++) {
-    const inner = $('ri'+i);
-    inner.innerHTML = '';
-    for (let j=0; j<30; j++) {
-      const d = document.createElement('div');
-      d.className = 'reel-item';
-      d.textContent = SYMBOLS[Math.floor(Math.random()*SYMBOLS.length)];
-      inner.appendChild(d);
-    }
-    inner.style.transform = 'translateY(0px)';
-  }
+/* ─────────────────────────────────────────
+   STREAK UI
+───────────────────────────────────────── */
+function updateStreakBadge() {
+  const alive = isStreakAlive();
+  streakBadgeCount.textContent = streak.count;
+  streakBadge.classList.toggle('active', alive && streak.count > 0);
 }
 
-function spinSlot() {
-  if (slotUsed) return;
-  slotUsed = true;
-  handleBtn.classList.add('spinning');
-  haptic([30,40,30]);
-  slotResult.className = 'slot-result';
-  slotResult.textContent = '';
+function renderCompletionStreak() {
+  streakCountBig.textContent = streak.count;
 
-  const isWin = Math.random() < 0.25;
-  const winSym = SYMBOLS[Math.floor(Math.random()*SYMBOLS.length)];
-  const spinCounts = [20, 24, 28];
-  const itemH = 80;
-  let done = 0;
+  // Milestone card
+  const next = getNextMilestone();
+  const justHit = MILESTONE_DAYS.includes(streak.count);
 
-  for (let ri=0; ri<3; ri++) {
-    const inner = $('ri'+ri);
-    const spins = spinCounts[ri];
-    let step = 0;
-    const delay = ri * 280;
-
-    setTimeout(() => {
-      const iv = setInterval(() => {
-        step++;
-        const easing = step < spins - 5 ? 'transform 0.07s linear' : 'transform 0.2s cubic-bezier(0.25,0.46,0.45,0.94)';
-        inner.style.transition = easing;
-        inner.style.transform = `translateY(-${step * itemH}px)`;
-        if (step % 3 === 0) playTick();
-
-        if (step >= spins) {
-          clearInterval(iv);
-          // inject final symbol
-          const sym = isWin ? winSym : SYMBOLS[Math.floor(Math.random()*SYMBOLS.length)];
-          const fin = document.createElement('div');
-          fin.className = 'reel-item'; fin.textContent = sym;
-          inner.appendChild(fin);
-          inner.style.transition = 'transform 0.25s cubic-bezier(0.34,1.3,0.64,1)';
-          inner.style.transform = `translateY(-${(step+1)*itemH}px)`;
-          done++;
-          if (done === 3) setTimeout(() => resolveSlot(isWin), 350);
-        }
-      }, ri===0 ? 75 : ri===1 ? 85 : 95);
-    }, delay);
-  }
-}
-
-function resolveSlot(isWin) {
-  handleBtn.classList.remove('spinning');
-  handleBtn.classList.add('used');
-  if (isWin) {
-    handleBtn.textContent = '🎉';
-    slotResult.textContent = 'Jackpot! Tot morgen!';
-    slotResult.className = 'slot-result win';
-    document.querySelectorAll('.reel-wrap').forEach(r => r.classList.add('win-glow'));
-    playWin();
-    haptic([60,30,60,30,120]);
+  if (justHit) {
+    milestoneCard.className = 'milestone-card achieved';
+    mcLabel.textContent = '🎉 Milestone reached!';
+    mcNext.innerHTML = `<span>${streak.count} days</span>`;
+    const r = rewards[streak.count] || '';
+    mcReward.textContent = r ? `Your reward: ${r}` : 'Set your reward in Milestones';
+    playMilestone();
+    haptic([60,40,60,40,120]);
+  } else if (next) {
+    milestoneCard.className = 'milestone-card';
+    const daysLeft = next - streak.count;
+    mcLabel.textContent = 'Next milestone';
+    mcNext.innerHTML = `<span>${next} days</span> — ${daysLeft} day${daysLeft!==1?'s':''} to go`;
+    const r = rewards[next] || '';
+    mcReward.textContent = r ? `Reward: ${r}` : 'Set a reward in Milestones ↗';
   } else {
-    handleBtn.textContent = '😴';
-    slotResult.textContent = 'Bijna! Morgen meer geluk';
-    slotResult.className = 'slot-result lose';
-    playLose();
-    haptic(50);
+    milestoneCard.className = 'milestone-card achieved';
+    mcLabel.textContent = '👑 All milestones reached!';
+    mcNext.innerHTML = `<span>${streak.count} days</span> and counting`;
+    mcReward.textContent = 'Legendary.';
   }
 }
 
-/* Timer / Focus */
-function formatDuration(min) { return min===1 ? '1 min' : `${min} min`; }
-function updateProgress(pct) { progressFill.style.width = pct + '%'; }
+/* ─────────────────────────────────────────
+   MILESTONES LIST (overlay tab)
+───────────────────────────────────────── */
+function renderMilestonesList() {
+  milestonesList.innerHTML = '';
+  streakInfoValue.textContent = `🔥 ${streak.count} day${streak.count!==1?'s':''}`;
+  longestInfoValue.textContent = `${streak.longest} day${streak.longest!==1?'s':''}`;
+
+  MILESTONE_DAYS.forEach((days, i) => {
+    const reached = streak.count >= days;
+    const isNext  = !reached && getNextMilestone() === days;
+    const li = document.createElement('li');
+    li.className = 'milestone-item' + (reached?' reached':isNext?' next':'');
+
+    const pct = reached ? 100 : Math.min(100, Math.round((streak.count / days) * 100));
+
+    li.innerHTML = `
+      <div class="milestone-icon">${MILESTONE_ICONS[i]}</div>
+      <div class="milestone-info">
+        <div class="milestone-days">${days} day${days!==1?'s':''} ${reached?'✓':''}</div>
+        <input class="milestone-reward-input"
+          type="text"
+          placeholder="${reached?'Reward reached':'Set your reward...'}"
+          value="${rewards[days]||''}"
+          data-days="${days}"
+          ${reached?'readonly':''}
+        >
+        ${!reached ? `
+        <div class="milestone-progress-wrap">
+          <div class="milestone-progress-track">
+            <div class="milestone-progress-fill" style="width:${pct}%"></div>
+          </div>
+        </div>` : ''}
+      </div>`;
+
+    if (!reached) {
+      li.querySelector('.milestone-reward-input').addEventListener('input', e => {
+        rewards[days] = e.target.value;
+        saveRewards();
+      });
+    }
+
+    milestonesList.appendChild(li);
+  });
+}
+
+/* ─────────────────────────────────────────
+   FOCUS / TIMER
+───────────────────────────────────────── */
+function formatDuration(min) { return min===1?'1 min':`${min} min`; }
+function updateProgress(pct) { progressFill.style.width=pct+'%'; }
 
 function renderTask(index, transition=true) {
-  if (index >= tasks.length) { showCompletion(); return; }
-  const task = tasks[index];
-  stepCounter.textContent = `${index+1} / ${tasks.length}`;
-  if (transition) {
+  if(index>=tasks.length){showCompletion();return;}
+  const task=tasks[index];
+  stepCounter.textContent=`${index+1} / ${tasks.length}`;
+  if(transition){
     taskLabel.classList.add('fade-out');
-    setTimeout(() => { taskLabel.textContent=task.name.toUpperCase(); taskDuration.textContent=formatDuration(task.duration); taskLabel.classList.remove('fade-out'); }, 400);
-  } else { taskLabel.textContent=task.name.toUpperCase(); taskDuration.textContent=formatDuration(task.duration); }
+    setTimeout(()=>{ taskLabel.textContent=task.name.toUpperCase(); taskDuration.textContent=formatDuration(task.duration); taskLabel.classList.remove('fade-out'); },400);
+  } else {
+    taskLabel.textContent=task.name.toUpperCase(); taskDuration.textContent=formatDuration(task.duration);
+  }
   startTimer(task.duration); renderList();
 }
 
 function startTimer(minutes) {
   clearInterval(timer); elapsed=0;
-  const total = minutes*60;
-  updateProgress(0);
-  timer = setInterval(() => { elapsed++; updateProgress(Math.min((elapsed/total)*100,100)); if(elapsed>=total) clearInterval(timer); }, 1000);
+  const total=minutes*60; updateProgress(0);
+  timer=setInterval(()=>{ elapsed++; updateProgress(Math.min((elapsed/total)*100,100)); if(elapsed>=total) clearInterval(timer); },1000);
 }
 
 function nextTask() {
   haptic(12); triggerFlash(); playClick();
   currentIndex++;
-  currentIndex >= tasks.length ? showCompletion() : renderTask(currentIndex);
+  currentIndex>=tasks.length?showCompletion():renderTask(currentIndex);
 }
 
 function showCompletion() {
-  clearInterval(timer); updateProgress(100); playChime();
-  slotUsed = false;
-  setTimeout(() => {
+  clearInterval(timer); updateProgress(100);
+  checkAndUpdateStreak();
+  playChime();
+  updateStreakBadge();
+  setTimeout(()=>{
     mainContent.classList.add('hidden');
-    header.style.opacity = '0';
-    tapHint.style.display = 'none';
+    header.style.opacity='0';
+    tapHint.style.display='none';
     completionScreen.classList.add('visible');
-    progressWrap.style.opacity = '0';
-    handleBtn.classList.remove('spinning','used');
-    handleBtn.textContent = '🎰';
-    slotResult.className = 'slot-result'; slotResult.textContent = '';
-    document.querySelectorAll('.reel-wrap').forEach(r => r.classList.remove('win-glow'));
-    buildReels();
-  }, 600);
+    progressWrap.style.opacity='0';
+    renderCompletionStreak();
+  },600);
 }
 
 function restart() {
@@ -397,13 +577,15 @@ function restart() {
   completionScreen.classList.remove('visible');
   mainContent.classList.remove('hidden');
   header.style.opacity='1'; tapHint.style.display=''; progressWrap.style.opacity='1';
-  renderTask(0, false);
+  renderTask(0,false);
 }
 
-/* List */
+/* ─────────────────────────────────────────
+   TASK LIST
+───────────────────────────────────────── */
 function renderList() {
   taskList.innerHTML='';
-  tasks.forEach((t,i) => {
+  tasks.forEach((t,i)=>{
     const li=document.createElement('li');
     li.className='task-item '+(i<currentIndex?'done':i===currentIndex?'active':'future');
     li.innerHTML=`<div class="task-indicator"></div><div class="task-info"><div class="task-name">${t.name}</div><div class="task-time">${formatDuration(t.duration)}</div></div>`;
@@ -411,34 +593,36 @@ function renderList() {
   });
 }
 
-/* Edit */
+/* ─────────────────────────────────────────
+   EDIT LIST
+───────────────────────────────────────── */
 function renderEditList() {
   editList.innerHTML='';
-  tasks.forEach((t,i) => {
+  tasks.forEach((t,i)=>{
     const li=document.createElement('li');
     li.className='edit-item'; li.draggable=true; li.dataset.index=i; li.style.animationDelay=(i*40)+'ms';
     li.innerHTML=`<span class="drag-handle">⠿</span>
       <div class="edit-fields">
-        <input class="edit-name-input" type="text" value="${t.name}" placeholder="Taaknaam" data-i="${i}">
+        <input class="edit-name-input" type="text" value="${t.name}" placeholder="Task name" data-i="${i}">
         <div class="edit-duration-row">
-          <span class="edit-duration-label">Duur (min)</span>
+          <span class="edit-duration-label">Duration (min)</span>
           <input class="edit-duration-input" type="number" min="1" max="120" value="${t.duration}" data-i="${i}">
         </div>
       </div>
       <button class="delete-btn" data-i="${i}">×</button>`;
-    li.querySelector('.edit-name-input').addEventListener('input', e => { tasks[+e.target.dataset.i].name=e.target.value||'Nieuwe taak'; saveTasks(); syncFocus(+e.target.dataset.i); });
-    li.querySelector('.edit-duration-input').addEventListener('input', e => { tasks[+e.target.dataset.i].duration=Math.max(1,Math.min(120,parseInt(e.target.value)||1)); saveTasks(); syncFocus(+e.target.dataset.i); });
-    li.querySelector('.delete-btn').addEventListener('click', e => {
+    li.querySelector('.edit-name-input').addEventListener('input',e=>{tasks[+e.target.dataset.i].name=e.target.value||'New task';saveTasks();syncFocus(+e.target.dataset.i);});
+    li.querySelector('.edit-duration-input').addEventListener('input',e=>{tasks[+e.target.dataset.i].duration=Math.max(1,Math.min(120,parseInt(e.target.value)||1));saveTasks();syncFocus(+e.target.dataset.i);});
+    li.querySelector('.delete-btn').addEventListener('click',e=>{
       const idx=+e.target.dataset.i; if(tasks.length===1) return;
       tasks.splice(idx,1); if(currentIndex>=tasks.length) currentIndex=tasks.length-1;
       saveTasks(); renderEditList(); syncFocus(currentIndex);
     });
-    li.addEventListener('dragstart', e => { dragSrcIndex=i; setTimeout(()=>li.classList.add('dragging'),0); e.dataTransfer.effectAllowed='move'; });
-    li.addEventListener('dragend', () => li.classList.remove('dragging'));
-    li.addEventListener('dragover', e => { e.preventDefault(); li.classList.add('drag-over'); });
-    li.addEventListener('dragleave', () => li.classList.remove('drag-over'));
-    li.addEventListener('drop', e => {
-      e.preventDefault(); li.classList.remove('drag-over');
+    li.addEventListener('dragstart',e=>{dragSrcIndex=i;setTimeout(()=>li.classList.add('dragging'),0);e.dataTransfer.effectAllowed='move';});
+    li.addEventListener('dragend',()=>li.classList.remove('dragging'));
+    li.addEventListener('dragover',e=>{e.preventDefault();li.classList.add('drag-over');});
+    li.addEventListener('dragleave',()=>li.classList.remove('drag-over'));
+    li.addEventListener('drop',e=>{
+      e.preventDefault();li.classList.remove('drag-over');
       if(dragSrcIndex===null||dragSrcIndex===i) return;
       const moved=tasks.splice(dragSrcIndex,1)[0]; tasks.splice(i,0,moved);
       if(dragSrcIndex===currentIndex) currentIndex=i;
@@ -451,42 +635,77 @@ function renderEditList() {
 }
 
 function syncFocus(idx) {
-  if(idx===currentIndex) { taskLabel.textContent=tasks[currentIndex].name.toUpperCase(); taskDuration.textContent=formatDuration(tasks[currentIndex].duration); }
+  if(idx===currentIndex){taskLabel.textContent=tasks[currentIndex].name.toUpperCase();taskDuration.textContent=formatDuration(tasks[currentIndex].duration);}
   stepCounter.textContent=`${currentIndex+1} / ${tasks.length}`;
 }
 
+/* ─────────────────────────────────────────
+   EDIT MODE TOGGLE
+───────────────────────────────────────── */
 function setEditMode(on) {
-  editMode=on; editToggleBtn.textContent=on?'Klaar':'Bewerken'; editToggleBtn.classList.toggle('active',on);
-  taskList.classList.toggle('hidden',on); addTaskBtn.style.display=on?'flex':'none';
-  if(on){editList.classList.add('visible');renderEditList();}else{editList.classList.remove('visible');renderList();}
+  editMode=on;
+  editToggleBtn.textContent=on?'Done':'Edit';
+  editToggleBtn.classList.toggle('active',on);
+  taskList.classList.toggle('hidden',on);
+  addTaskBtn.style.display=on?'flex':'none';
+  if(on){editList.classList.add('visible');renderEditList();}
+  else{editList.classList.remove('visible');renderList();}
 }
 
-/* Events */
-editToggleBtn.addEventListener('click', ()=>setEditMode(!editMode));
-addTaskBtn.addEventListener('click', ()=>{
-  tasks.push({name:'Nieuwe taak',duration:5}); saveTasks(); renderEditList();
-  setTimeout(()=>{ const p=document.querySelector('.overlay-panel'); p.scrollTop=p.scrollHeight; const ins=editList.querySelectorAll('.edit-name-input'); if(ins.length){ins[ins.length-1].focus();ins[ins.length-1].select();} },50);
+/* ─────────────────────────────────────────
+   TABS
+───────────────────────────────────────── */
+document.querySelectorAll('.overlay-tab').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('.overlay-tab').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+    btn.classList.add('active');
+    $('tab-'+btn.dataset.tab).classList.add('active');
+    // hide edit button on milestones tab
+    editToggleBtn.style.display = btn.dataset.tab==='tasks'?'':'none';
+    if(btn.dataset.tab==='milestones') { if(editMode) setEditMode(false); renderMilestonesList(); }
+    else renderList();
+  });
 });
 
-function openOverlay()  { overlay.classList.add('open'); editMode?renderEditList():renderList(); }
+/* ─────────────────────────────────────────
+   EVENTS
+───────────────────────────────────────── */
+editToggleBtn.addEventListener('click',()=>setEditMode(!editMode));
+addTaskBtn.addEventListener('click',()=>{
+  tasks.push({name:'New task',duration:5});saveTasks();renderEditList();
+  setTimeout(()=>{const p=document.querySelector('.overlay-panel');p.scrollTop=p.scrollHeight;const ins=editList.querySelectorAll('.edit-name-input');if(ins.length){ins[ins.length-1].focus();ins[ins.length-1].select();}},50);
+});
+
+function openOverlay(tab='tasks') {
+  overlay.classList.add('open');
+  // activate correct tab
+  document.querySelectorAll('.overlay-tab').forEach(b=>{ b.classList.toggle('active',b.dataset.tab===tab); });
+  document.querySelectorAll('.tab-panel').forEach(p=>{ p.classList.toggle('active',p.id==='tab-'+tab); });
+  editToggleBtn.style.display = tab==='tasks'?'':'none';
+  if(tab==='milestones') renderMilestonesList();
+  else { editMode?renderEditList():renderList(); }
+}
 function closeOverlay() { overlay.classList.remove('open'); if(editMode) setEditMode(false); }
 
-peekBtn.addEventListener('click', ()=>overlay.classList.contains('open')?closeOverlay():openOverlay());
-overlayBackdrop.addEventListener('click', closeOverlay);
-focusArea.addEventListener('click', ()=>nextTask());
-restartBtn.addEventListener('click', restart);
-handleBtn.addEventListener('click', spinSlot);
+peekBtn.addEventListener('click',()=>overlay.classList.contains('open')?closeOverlay():openOverlay('tasks'));
+overlayBackdrop.addEventListener('click',closeOverlay);
+focusArea.addEventListener('click',()=>nextTask());
+restartBtn.addEventListener('click',restart);
+streakBadge.addEventListener('click',()=>{ openOverlay('milestones'); });
 
 let touchStartY=0;
-document.addEventListener('touchstart', e=>{ touchStartY=e.touches[0].clientY; },{passive:true});
-document.addEventListener('touchend', e=>{
-  if(overlay.classList.contains('open')){ if(touchStartY-e.changedTouches[0].clientY<-60) closeOverlay(); return; }
-  if(touchStartY-e.changedTouches[0].clientY>60) openOverlay();
+document.addEventListener('touchstart',e=>{touchStartY=e.touches[0].clientY;},{passive:true});
+document.addEventListener('touchend',e=>{
+  if(overlay.classList.contains('open')){if(touchStartY-e.changedTouches[0].clientY<-60) closeOverlay();return;}
+  if(touchStartY-e.changedTouches[0].clientY>60) openOverlay('tasks');
 },{passive:true});
 
-/* Init */
+/* ─────────────────────────────────────────
+   INIT
+───────────────────────────────────────── */
+updateStreakBadge();
 renderTask(0,false);
-buildReels();
 </script>
 </body>
 </html>
