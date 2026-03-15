@@ -104,6 +104,7 @@
   .overlay-handle { width:36px; height:3px; background:var(--border); border-radius:2px; margin:0 auto 28px; }
   .overlay-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; }
   .overlay-title { font-size:0.65rem; letter-spacing:0.25em; text-transform:uppercase; color:var(--muted); }
+  .tasks-total { text-align:right; font-size:0.6rem; letter-spacing:0.18em; text-transform:uppercase; color:rgba(240,236,230,0.2); margin-top:14px; }
   .edit-toggle-btn { background:none; border:1px solid var(--border); color:var(--muted); font-family:inherit; font-size:0.6rem; letter-spacing:0.2em; text-transform:uppercase; padding:6px 12px; border-radius:2px; cursor:pointer; transition:all 0.25s; }
   .edit-toggle-btn:hover,.edit-toggle-btn.active { border-color:var(--amber); color:var(--amber); }
 
@@ -292,7 +293,7 @@
   <div class="overlay-panel">
     <div class="overlay-handle"></div>
     <div class="overlay-header">
-      <div class="overlay-title" id="overlayTitle">Morning Routine</div>
+      <div class="overlay-title">Morning Routine</div>
       <button class="edit-toggle-btn" id="editToggleBtn">Edit</button>
     </div>
 
@@ -307,6 +308,7 @@
       <ul class="task-list" id="taskList"></ul>
       <ul class="edit-list" id="editList"></ul>
       <button class="add-task-btn" id="addTaskBtn" style="display:none">+ Add task</button>
+      <div class="tasks-total" id="overlayTotal"></div>
     </div>
 
     <!-- Milestones tab -->
@@ -585,6 +587,9 @@ function restart() {
 ───────────────────────────────────────── */
 function renderList() {
   taskList.innerHTML='';
+  const total = tasks.reduce((sum,t)=>sum+t.duration,0);
+  const totalEl = $('overlayTotal');
+  if (totalEl) totalEl.textContent = `${total} min total`;
   tasks.forEach((t,i)=>{
     const li=document.createElement('li');
     li.className='task-item '+(i<currentIndex?'done':i===currentIndex?'active':'future');
@@ -610,6 +615,9 @@ function reorderTasks(fromIdx, toIdx) {
 
 function renderEditList() {
   editList.innerHTML='';
+  const total = tasks.reduce((sum,t)=>sum+t.duration,0);
+  const totalEl = $('overlayTotal');
+  if (totalEl) totalEl.textContent = `${total} min total`;
   tasks.forEach((t,i)=>{
     const li=document.createElement('li');
     li.className='edit-item'; li.dataset.index=i; li.style.animationDelay=(i*40)+'ms';
