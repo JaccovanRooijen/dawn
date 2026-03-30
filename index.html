@@ -213,6 +213,76 @@
   .streak-info-label { font-size:0.6rem; letter-spacing:0.2em; text-transform:uppercase; color:var(--muted); }
   .streak-info-value { font-size:1rem; font-weight:200; color:var(--amber); }
 
+  /* ── Restore streak ── */
+  .restore-streak-box {
+    margin-bottom: 4px;
+    border: 1px solid rgba(255,179,71,0.25);
+    border-radius: 10px;
+    padding: 16px 18px;
+    background: rgba(255,179,71,0.05);
+    animation: slideIn 0.3s ease forwards;
+  }
+  .restore-streak-box .rs-top {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  }
+  .restore-streak-box .rs-info { flex: 1; }
+  .restore-streak-box .rs-label {
+    font-size: 0.58rem; letter-spacing: 0.25em; text-transform: uppercase;
+    color: var(--amber); margin-bottom: 5px;
+  }
+  .restore-streak-box .rs-desc {
+    font-size: 0.78rem; font-weight: 300; color: rgba(240,236,230,0.55);
+    line-height: 1.5; letter-spacing: 0.02em;
+  }
+  .restore-streak-btn {
+    flex-shrink: 0; padding: 10px 16px;
+    background: rgba(255,179,71,0.12); border: 1px solid rgba(255,179,71,0.4);
+    color: var(--amber); font-family: inherit; font-size: 0.68rem;
+    letter-spacing: 0.18em; text-transform: uppercase; cursor: pointer;
+    border-radius: 6px; transition: all 0.25s; white-space: nowrap;
+  }
+  .restore-streak-btn:hover { background: rgba(255,179,71,0.22); border-color: var(--amber); }
+  .restore-streak-box .rs-used {
+    font-size: 0.68rem; font-weight: 300; color: var(--muted);
+    letter-spacing: 0.08em; font-style: italic; text-align: center;
+    padding-top: 10px; border-top: 1px solid var(--border); margin-top: 12px;
+  }
+  .restore-confirm-row {
+    display: flex; gap: 8px; margin-top: 12px;
+    border-top: 1px solid var(--border); padding-top: 12px;
+  }
+  .restore-confirm-btn {
+    flex: 1; padding: 9px 0; background: rgba(255,179,71,0.15);
+    border: 1px solid rgba(255,179,71,0.5); color: var(--amber);
+    font-family: inherit; font-size: 0.65rem; letter-spacing: 0.18em;
+    text-transform: uppercase; cursor: pointer; border-radius: 4px; transition: all 0.2s;
+  }
+  .restore-confirm-btn:hover { background: rgba(255,179,71,0.28); }
+  .restore-cancel-btn {
+    flex: 1; padding: 9px 0; background: none;
+    border: 1px solid var(--border); color: var(--muted);
+    font-family: inherit; font-size: 0.65rem; letter-spacing: 0.18em;
+    text-transform: uppercase; cursor: pointer; border-radius: 4px; transition: all 0.2s;
+  }
+  .restore-cancel-btn:hover { border-color: rgba(240,236,230,0.3); color: var(--text); }
+
+  .rs-set-row {
+    display: flex; align-items: center; justify-content: center;
+    gap: 20px; padding: 14px 0 4px;
+  }
+  .rs-stepper {
+    width: 36px; height: 36px; border-radius: 50%;
+    background: rgba(255,179,71,0.1); border: 1px solid rgba(255,179,71,0.35);
+    color: var(--amber); font-size: 1.2rem; line-height: 1;
+    cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center;
+    font-family: inherit;
+  }
+  .rs-stepper:hover { background: rgba(255,179,71,0.22); border-color: var(--amber); }
+  .rs-stepper:active { transform: scale(0.92); }
+  .rs-count-wrap { text-align: center; min-width: 60px; }
+  .rs-count-num { font-size: 2rem; font-weight: 200; color: var(--amber); letter-spacing: -0.02em; display: block; line-height: 1; }
+  .rs-count-label { font-size: 0.6rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--muted); }
+
   /* Scrollbar */
   .overlay-panel::-webkit-scrollbar { width:3px; }
   .overlay-panel::-webkit-scrollbar-track { background:transparent; }
@@ -350,10 +420,51 @@ function save(key, val) {
 let tasks     = load('dawn-tasks', DEFAULT_TASKS);
 let streak    = load('dawn-streak', { count: 0, longest: 0, lastDate: null });
 let rewards   = load('dawn-rewards', {}); // { "3": "...", "7": "...", ... }
+let restoreData = load('dawn-restore', { lastUsedDate: null }); // track restore usage
 
 function saveTasks()   { save('dawn-tasks', tasks); }
 function saveStreak()  { save('dawn-streak', streak); }
 function saveRewards() { save('dawn-rewards', rewards); }
+function saveRestore() { save('dawn-restore', restoreData); }
+
+/* ─────────────────────────────────────────
+   RESTORE STREAK LOGIC
+───────────────────────────────────────── */
+function weekStr(date) {
+  // Returns ISO year + week number (e.g. "2025-W12")
+  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  const dayNum = d.getUTCDay() || 7;
+  d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  const week = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+  return `${d.getUTCFullYear()}-W${String(week).padStart(2,'0')}`;
+}
+
+function canRestoreStreak() {
+  if (isStreakAlive()) return false; // streak isn't broken
+  if (streak.count === 0) return false; // no streak to restore
+  const today = new Date();
+  const thisWeek = weekStr(today);
+  if (restoreData.lastUsedDate) {
+    const usedWeek = weekStr(new Date(restoreData.lastUsedDate));
+    if (usedWeek === thisWeek) return false; // already used this week
+  }
+  // Only allow restore if streak was broken within the last 2 days
+  if (!streak.lastDate) return false;
+  const last = new Date(streak.lastDate + 'T00:00:00');
+  const diffDays = Math.round((today - last) / 86400000);
+  return diffDays <= 2;
+}
+
+function restoreStreak() {
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+  streak.lastDate = yesterday.toISOString().slice(0, 10);
+  restoreData.lastUsedDate = todayStr();
+  saveStreak();
+  saveRestore();
+  updateStreakBadge();
+}
 
 /* ─────────────────────────────────────────
    STREAK LOGIC
@@ -490,6 +601,75 @@ function renderMilestonesList() {
   streakInfoValue.textContent = `🔥 ${streak.count} day${streak.count!==1?'s':''}`;
   longestInfoValue.textContent = `${streak.longest} day${streak.longest!==1?'s':''}`;
 
+  // Remove any existing restore box to avoid duplicates
+  const existing = document.querySelector('.restore-streak-box');
+  if (existing) existing.remove();
+  const restoreBox = document.createElement('div');
+  restoreBox.className = 'restore-streak-box';
+
+  const today = new Date();
+  const thisWeek = weekStr(today);
+  const usedThisWeek = restoreData.lastUsedDate && weekStr(new Date(restoreData.lastUsedDate)) === thisWeek;
+
+  if (usedThisWeek) {
+    // Already set streak this week — show read-only state
+    restoreBox.innerHTML = `
+      <div class="rs-top">
+        <div class="rs-info">
+          <div class="rs-label">🛡 Streak shield</div>
+          <div class="rs-desc">Streak set this week. Come back next week to adjust again.</div>
+        </div>
+      </div>`;
+  } else {
+    // Available — show the setter
+    restoreBox.innerHTML = `
+      <div class="rs-top">
+        <div class="rs-info">
+          <div class="rs-label">🛡 Set streak</div>
+          <div class="rs-desc">Manually set your streak count — once per week.</div>
+        </div>
+      </div>
+      <div class="rs-set-row">
+        <button class="rs-stepper" id="rsDown">−</button>
+        <div class="rs-count-wrap">
+          <span class="rs-count-num" id="rsCount">${streak.count}</span>
+          <span class="rs-count-label">days</span>
+        </div>
+        <button class="rs-stepper" id="rsUp">+</button>
+      </div>
+      <div class="restore-confirm-row">
+        <button class="restore-confirm-btn" id="confirmSetBtn">Save streak</button>
+        <button class="restore-cancel-btn" id="cancelSetBtn">Cancel</button>
+      </div>`;
+
+    let draft = streak.count;
+    const rsCountEl = restoreBox.querySelector('#rsCount');
+
+    restoreBox.querySelector('#rsDown').addEventListener('click', () => {
+      if (draft > 0) { draft--; rsCountEl.textContent = draft; }
+    });
+    restoreBox.querySelector('#rsUp').addEventListener('click', () => {
+      draft++; rsCountEl.textContent = draft;
+    });
+    restoreBox.querySelector('#confirmSetBtn').addEventListener('click', () => {
+      streak.count = draft;
+      if (draft > streak.longest) streak.longest = draft;
+      // Mark last date as yesterday so streak stays alive after completing today
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+      streak.lastDate = yesterday.toISOString().slice(0, 10);
+      restoreData.lastUsedDate = todayStr();
+      saveStreak(); saveRestore(); updateStreakBadge();
+      renderMilestonesList();
+      haptic([30, 20, 60]);
+    });
+    restoreBox.querySelector('#cancelSetBtn').addEventListener('click', () => {
+      renderMilestonesList();
+    });
+  }
+
+  // Insert restore box before the milestones list
+  milestonesList.parentNode.insertBefore(restoreBox, milestonesList);
   MILESTONE_DAYS.forEach((days, i) => {
     const reached = streak.count >= days;
     const isNext  = !reached && getNextMilestone() === days;
