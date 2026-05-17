@@ -5,292 +5,426 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Dawn</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@200;300;400&family=DM+Serif+Display:ital@1&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
-  *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
-  :root {
-    --bg:#0e0e0f; --surface:rgba(255,255,255,0.04);
-    --amber:#FFB347; --amber-dim:rgba(255,179,71,0.15);
-    --text:#f0ece6; --muted:rgba(240,236,230,0.3); --border:rgba(255,255,255,0.07);
-  }
-  html,body { height:100%; width:100%; overflow:hidden; background:var(--bg); color:var(--text); font-family:'DM Sans',sans-serif; -webkit-font-smoothing:antialiased; }
-  body::before { content:''; position:fixed; inset:0; background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E"); pointer-events:none; z-index:0; }
+*, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+:root {
+  --bg: #F7F5F2;
+  --white: #FFFFFF;
+  --text: #1A1714;
+  --text-mid: #6B6460;
+  --text-soft: #B0AAA5;
 
-  /* ── Flash ── */
-  #flash { position:fixed; inset:0; background:radial-gradient(ellipse at center,rgba(255,179,71,0.18) 0%,rgba(255,179,71,0.04) 60%,transparent 100%); pointer-events:none; z-index:100; opacity:0; }
-  #flash.fire { animation:amberFlash 0.6s cubic-bezier(0.22,1,0.36,1) forwards; }
-  @keyframes amberFlash { 0%{opacity:0} 15%{opacity:1} 100%{opacity:0} }
+  --green:  #3D7A5F;
+  --green-light: #E8F3EE;
+  --green-mid: #C2DDD1;
 
-  /* ── App shell ── */
-  #app { position:relative; height:100%; display:flex; flex-direction:column; z-index:1; }
+  --amber:  #C8711A;
+  --amber-light: #FDF0E4;
+  --amber-mid: #F0C99A;
 
-  /* ── Header ── */
-  .header { position:absolute; top:0; left:0; right:0; display:flex; justify-content:space-between; align-items:center; padding:48px 32px 0; transition:opacity 0.4s; z-index:2; pointer-events:none; }
-  .header > *, .header * { pointer-events:all; }
-  .logo { font-family:'DM Serif Display',serif; font-style:italic; font-size:1.1rem; letter-spacing:0.05em; color:var(--amber); opacity:0.8; }
-  .header-right { display:flex; align-items:center; gap:14px; }
-  .step-counter { font-size:0.75rem; font-weight:300; letter-spacing:0.15em; color:var(--muted); text-transform:uppercase; }
+  --blue:   #3460A8;
+  --blue-light: #E6EDF8;
+  --blue-mid: #B4C8E8;
 
-  /* Streak badge in header */
-  .streak-badge {
-    display:flex; align-items:center; gap:5px;
-    font-size:0.72rem; font-weight:300; letter-spacing:0.1em;
-    color:var(--muted); cursor:pointer;
-    -webkit-tap-highlight-color:transparent;
-    transition:color 0.3s;
-  }
-  .streak-badge.active { color:var(--amber); }
-  .streak-badge .flame { font-size:0.85rem; display:inline-block; }
-  .streak-badge.active .flame { animation:flamePop 0.4s cubic-bezier(0.34,1.56,0.64,1); }
-  @keyframes flamePop { 0%{transform:scale(0.6)} 60%{transform:scale(1.3)} 100%{transform:scale(1)} }
+  --rose:   #B8485A;
+  --rose-light: #FAECEE;
+  --rose-mid: #E8B0B8;
 
-  /* ── Focus area ── */
-  .focus-area { flex:1; display:flex; flex-direction:column; justify-content:center; align-items:center; padding:0 32px; cursor:pointer; user-select:none; -webkit-tap-highlight-color:transparent; }
-  .task-label { font-size:clamp(2.8rem,12vw,5.5rem); font-weight:200; letter-spacing:-0.02em; line-height:1.1; text-align:center; color:var(--text); transition:opacity 0.5s ease,transform 0.5s ease; text-transform:uppercase; }
-  .task-label.fade-out { opacity:0; transform:translateY(-16px); }
-  .task-duration { margin-top:20px; font-size:0.8rem; font-weight:300; letter-spacing:0.25em; color:var(--muted); text-transform:uppercase; }
-  .tap-hint { position:absolute; bottom:130px; left:50%; transform:translateX(-50%); font-size:0.65rem; letter-spacing:0.2em; color:var(--muted); text-transform:uppercase; animation:pulse 3s ease-in-out infinite; white-space:nowrap; }
-  @keyframes pulse { 0%,100%{opacity:0.3} 50%{opacity:0.7} }
+  --border: rgba(26,23,20,0.08);
+  --shadow: 0 2px 12px rgba(26,23,20,0.07);
+  --shadow-lg: 0 8px 32px rgba(26,23,20,0.12);
+}
 
-  /* ── Progress bar ── */
-  .progress-wrap { padding:0; }
-  .progress-track { width:100%; height:1px; background:var(--border); border-radius:1px; overflow:visible; position:relative; }
-  .progress-fill { height:1px; background:var(--amber); border-radius:1px; transition:width 1s linear; box-shadow:0 0 8px rgba(255,179,71,0.5); }
-  .progress-dot { position:absolute; right:-3px; top:-3px; width:7px; height:7px; border-radius:50%; background:var(--amber); box-shadow:0 0 10px var(--amber); }
+html, body {
+  height:100%; width:100%; overflow:hidden;
+  background:var(--bg); color:var(--text);
+  font-family:'Plus Jakarta Sans', sans-serif;
+  -webkit-font-smoothing:antialiased;
+}
 
-  /* ── Completion screen ── */
-  .completion { display:none; flex-direction:column; justify-content:flex-start; align-items:center; height:100%; text-align:center; padding:32px 32px 40px; gap:0; overflow-y:auto; }
-  .completion.visible { display:flex; }
+/* ── Flash ── */
+#flash { position:fixed; inset:0; background:radial-gradient(ellipse at 50% 60%, rgba(61,122,95,0.15) 0%, transparent 70%); pointer-events:none; z-index:100; opacity:0; }
+#flash.fire { animation:warmFlash 0.5s ease forwards; }
+@keyframes warmFlash { 0%{opacity:0} 20%{opacity:1} 100%{opacity:0} }
 
-  .completion-check { font-size:2.2rem; margin-bottom:8px; display:block; animation:popIn 0.5s cubic-bezier(0.34,1.56,0.64,1); margin-top:24px; }
-  .completion-title { font-size:1.4rem; font-weight:200; letter-spacing:0.1em; text-transform:uppercase; margin-bottom:4px; }
-  .completion-sub { font-size:0.7rem; color:var(--muted); letter-spacing:0.15em; text-transform:uppercase; margin-bottom:24px; }
+/* ── App shell ── */
+#app { position:relative; height:100%; display:flex; flex-direction:column; z-index:1; }
 
-  @keyframes popIn { from{transform:scale(0);opacity:0} to{transform:scale(1);opacity:1} }
+/* ── Header ── */
+.header {
+  position:absolute; top:0; left:0; right:0;
+  display:flex; justify-content:space-between; align-items:center;
+  padding:52px 24px 0; transition:opacity 0.4s; z-index:2; pointer-events:none;
+}
+.header > *, .header * { pointer-events:all; }
 
-  .streak-display { display:flex; flex-direction:column; align-items:center; gap:4px; margin-bottom:20px; }
-  .streak-flame-big { font-size:2.8rem; line-height:1; animation:flameFloat 2s ease-in-out infinite; filter:drop-shadow(0 0 12px rgba(255,179,71,0.5)); }
-  @keyframes flameFloat { 0%,100%{transform:translateY(0) scale(1)} 50%{transform:translateY(-5px) scale(1.05)} }
-  .streak-count-big { font-size:2.6rem; font-weight:200; letter-spacing:-0.02em; color:var(--amber); animation:popIn 0.6s 0.2s cubic-bezier(0.34,1.56,0.64,1) both; }
-  .streak-label { font-size:0.62rem; letter-spacing:0.25em; text-transform:uppercase; color:var(--muted); }
+.logo {
+  font-size:1.1rem; font-weight:800; letter-spacing:-0.02em; color:var(--text);
+}
+.logo span { color:var(--green); }
 
-  /* Milestone card */
-  .milestone-card { width:100%; max-width:300px; border:1px solid var(--border); border-radius:10px; padding:14px 18px; margin-bottom:20px; background:var(--surface); animation:popIn 0.5s 0.4s cubic-bezier(0.34,1.56,0.64,1) both; }
-  .milestone-card .mc-label { font-size:0.58rem; letter-spacing:0.25em; text-transform:uppercase; color:var(--muted); margin-bottom:6px; }
-  .milestone-card .mc-next { font-size:0.88rem; font-weight:300; color:var(--text); letter-spacing:0.03em; }
-  .milestone-card .mc-next span { color:var(--amber); }
-  .milestone-card .mc-reward { font-size:0.75rem; font-weight:300; color:var(--muted); margin-top:4px; letter-spacing:0.02em; font-style:italic; }
-  .milestone-card.achieved { border-color:rgba(255,179,71,0.4); background:rgba(255,179,71,0.06); }
-  .milestone-card.achieved .mc-label { color:var(--amber); }
+.header-right { display:flex; align-items:center; gap:10px; }
 
-  .restart-btn { padding:13px 28px; background:none; border:1px solid var(--border); color:var(--muted); font-family:inherit; font-size:0.72rem; letter-spacing:0.2em; text-transform:uppercase; cursor:pointer; border-radius:2px; transition:all 0.3s; }
-  .restart-btn:hover { border-color:var(--amber); color:var(--amber); }
-  .home-btn { margin-top:10px; padding:10px 24px; background:none; border:none; color:var(--muted); font-family:inherit; font-size:0.68rem; letter-spacing:0.15em; text-transform:uppercase; cursor:pointer; border-radius:2px; transition:color 0.3s; opacity:0.6; }
-  .home-btn:hover { color:var(--text); opacity:1; }
+.step-pill {
+  background:var(--white); border:1px solid var(--border);
+  padding:5px 12px; border-radius:100px;
+  font-size:0.7rem; font-weight:600; letter-spacing:0.04em;
+  color:var(--text-mid); box-shadow:var(--shadow);
+}
 
-  /* ── Peek button ── */
-  .peek-btn { position:fixed; bottom:40px; right:32px; width:40px; height:40px; border-radius:50%; background:var(--surface); border:1px solid var(--border); display:flex; align-items:center; justify-content:center; cursor:pointer; z-index:10; transition:all 0.3s; -webkit-tap-highlight-color:transparent; backdrop-filter:blur(10px); }
-  .peek-btn:hover { border-color:var(--amber); }
-  .peek-btn svg { width:16px; height:16px; stroke:var(--muted); transition:stroke 0.3s; }
-  .peek-btn:hover svg { stroke:var(--amber); }
+.streak-badge {
+  display:flex; align-items:center; gap:5px;
+  background:var(--amber-light); border:1px solid var(--amber-mid);
+  padding:5px 12px; border-radius:100px;
+  font-size:0.7rem; font-weight:700; color:var(--amber);
+  cursor:pointer; -webkit-tap-highlight-color:transparent;
+  transition:all 0.2s; box-shadow:var(--shadow);
+}
+.streak-badge.inactive { background:var(--white); border-color:var(--border); color:var(--text-soft); }
+.streak-badge .flame { font-size:0.8rem; }
+.streak-badge.active .flame { animation:flamePop 0.4s cubic-bezier(0.34,1.56,0.64,1); }
+@keyframes flamePop { 0%{transform:scale(0.6)} 60%{transform:scale(1.35)} 100%{transform:scale(1)} }
 
-  /* ── Overlay ── */
-  .overlay { position:fixed; inset:0; z-index:20; pointer-events:none; display:flex; flex-direction:column; justify-content:flex-end; }
-  .overlay-backdrop { position:absolute; inset:0; background:rgba(14,14,15,0.6); opacity:0; transition:opacity 0.4s ease; }
-  .overlay-panel { position:relative; background:rgba(22,22,24,0.88); backdrop-filter:blur(24px) saturate(180%); -webkit-backdrop-filter:blur(24px) saturate(180%); border-top:1px solid var(--border); border-radius:20px 20px 0 0; padding:28px 32px 48px; transform:translateY(100%); transition:transform 0.45s cubic-bezier(0.32,0.72,0,1); max-height:80vh; overflow-y:auto; }
-  .overlay.open { pointer-events:all; }
-  .overlay.open .overlay-backdrop { opacity:1; }
-  .overlay.open .overlay-panel { transform:translateY(0); }
-  .overlay-handle { width:36px; height:3px; background:var(--border); border-radius:2px; margin:0 auto 28px; }
-  .overlay-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; }
-  .overlay-title { font-size:0.65rem; letter-spacing:0.25em; text-transform:uppercase; color:var(--muted); }
-  .tasks-total { text-align:right; font-size:0.6rem; letter-spacing:0.18em; text-transform:uppercase; color:rgba(240,236,230,0.2); margin-top:14px; }
-  .edit-toggle-btn { background:none; border:1px solid var(--border); color:var(--muted); font-family:inherit; font-size:0.6rem; letter-spacing:0.2em; text-transform:uppercase; padding:6px 12px; border-radius:2px; cursor:pointer; transition:all 0.25s; }
-  .edit-toggle-btn:hover,.edit-toggle-btn.active { border-color:var(--amber); color:var(--amber); }
+/* ── Progress bar ── */
+.progress-wrap { padding:0 24px; }
+.progress-track { width:100%; height:4px; background:var(--border); border-radius:4px; overflow:hidden; }
+.progress-fill { height:4px; background:linear-gradient(90deg, var(--green), #5BAF87); border-radius:4px; transition:width 1s linear; }
 
-  /* ── Tab bar inside overlay ── */
-  .overlay-tabs { display:flex; gap:0; margin-bottom:24px; border-bottom:1px solid var(--border); }
-  .overlay-tab { flex:1; padding:10px 0; background:none; border:none; color:var(--muted); font-family:inherit; font-size:0.65rem; letter-spacing:0.2em; text-transform:uppercase; cursor:pointer; transition:color 0.2s; position:relative; }
-  .overlay-tab.active { color:var(--amber); }
-  .overlay-tab.active::after { content:''; position:absolute; bottom:-1px; left:0; right:0; height:1px; background:var(--amber); }
-  .tab-panel { display:none; }
-  .tab-panel.active { display:block; }
+/* ── Focus area ── */
+.focus-area {
+  flex:1; display:flex; flex-direction:column;
+  justify-content:center; align-items:center;
+  padding:0 28px; cursor:pointer;
+  user-select:none; -webkit-tap-highlight-color:transparent;
+}
 
-  /* ── Task list ── */
-  .task-list { list-style:none; }
-  .task-item { display:flex; align-items:center; gap:16px; padding:14px 0; border-bottom:1px solid var(--border); transition:opacity 0.3s; }
-  .task-item:last-child { border-bottom:none; }
-  .task-indicator { flex-shrink:0; width:20px; height:20px; border-radius:50%; display:flex; align-items:center; justify-content:center; }
-  .task-item.done .task-indicator { background:var(--amber-dim); border:1.5px solid var(--amber); }
-  .task-item.done .task-indicator::after { content:''; display:block; width:8px; height:5px; border-left:1.5px solid var(--amber); border-bottom:1.5px solid var(--amber); transform:rotate(-45deg) translate(1px,-1px); }
-  .task-item.active .task-indicator { border:1.5px solid var(--amber); box-shadow:0 0 8px rgba(255,179,71,0.3); }
-  .task-item.active .task-indicator::after { content:''; display:block; width:6px; height:6px; border-radius:50%; background:var(--amber); }
-  .task-item.future .task-indicator { border:1.5px solid rgba(255,255,255,0.15); }
-  .task-info { flex:1; }
-  .task-name { font-size:0.9rem; font-weight:300; letter-spacing:0.05em; }
-  .task-time { font-size:0.65rem; letter-spacing:0.15em; color:var(--muted); margin-top:2px; }
-  .task-item.done .task-name { text-decoration:line-through; color:var(--muted); }
-  .task-item.done { opacity:0.5; }
-  .task-item.active .task-name { color:var(--amber); }
-  .task-item.future .task-name { color:rgba(240,236,230,0.5); }
-  .task-item.active { position:relative; padding-left:8px; }
-  .task-item.active::before { content:''; position:absolute; left:-32px; top:0; bottom:0; width:2px; background:var(--amber); }
+.task-card {
+  width:100%; max-width:340px;
+  background:var(--white); border-radius:24px;
+  padding:36px 32px 32px;
+  box-shadow:var(--shadow-lg);
+  border:1px solid var(--border);
+  display:flex; flex-direction:column; gap:20px;
+  transition:transform 0.15s ease;
+}
+.task-card:active { transform:scale(0.985); }
 
-  /* ── Edit mode ── */
-  .edit-list { list-style:none; display:none; }
-  .edit-list.visible { display:block; }
-  .task-list.hidden { display:none; }
-  .edit-item { display:flex; align-items:center; gap:10px; padding:10px 0; border-bottom:1px solid var(--border); animation:slideIn 0.2s ease forwards; }
-  .edit-item:last-child { border-bottom:none; }
-  @keyframes slideIn { from{opacity:0;transform:translateX(-8px)} to{opacity:1;transform:translateX(0)} }
-  .drag-handle { cursor:grab; color:var(--muted); font-size:0.9rem; padding:4px; flex-shrink:0; opacity:0.4; transition:opacity 0.2s; }
-  .drag-handle:hover { opacity:0.8; }
-  .drag-handle:active { cursor:grabbing; }
-  .edit-fields { flex:1; display:flex; flex-direction:column; gap:6px; }
-  .edit-name-input { background:rgba(255,255,255,0.04); border:1px solid var(--border); border-radius:4px; color:var(--text); font-family:inherit; font-size:0.85rem; font-weight:300; padding:7px 10px; width:100%; outline:none; transition:border-color 0.2s; }
-  .edit-name-input:focus { border-color:rgba(255,179,71,0.5); }
-  .edit-name-input::placeholder { color:var(--muted); }
-  .edit-duration-row { display:flex; align-items:center; gap:8px; }
-  .edit-duration-label { font-size:0.6rem; letter-spacing:0.15em; text-transform:uppercase; color:var(--muted); white-space:nowrap; }
-  .edit-duration-input { background:rgba(255,255,255,0.04); border:1px solid var(--border); border-radius:4px; color:var(--text); font-family:inherit; font-size:0.8rem; padding:5px 8px; width:56px; outline:none; transition:border-color 0.2s; text-align:center; }
-  .edit-duration-input:focus { border-color:rgba(255,179,71,0.5); }
-  .delete-btn { background:none; border:none; color:rgba(255,255,255,0.2); cursor:pointer; font-size:1.1rem; padding:4px; line-height:1; flex-shrink:0; transition:color 0.2s; border-radius:4px; }
-  .delete-btn:hover { color:#ff6b6b; }
-  .add-task-btn { display:flex; align-items:center; gap:10px; width:100%; margin-top:16px; padding:12px 0; background:none; border:1px dashed var(--border); border-radius:4px; color:var(--muted); font-family:inherit; font-size:0.75rem; letter-spacing:0.15em; text-transform:uppercase; cursor:pointer; justify-content:center; transition:all 0.25s; }
-  .add-task-btn:hover { border-color:rgba(255,179,71,0.4); color:var(--amber); }
-  .edit-item.drag-over { opacity:0.4; }
-  .edit-item.dragging { opacity:0.15; }
+.task-tag {
+  display:inline-flex; align-items:center; gap:6px;
+  padding:5px 12px; border-radius:100px;
+  font-size:0.65rem; font-weight:700; letter-spacing:0.06em; text-transform:uppercase;
+  width:fit-content;
+}
+.task-tag.green  { background:var(--green-light);  color:var(--green); }
+.task-tag.amber  { background:var(--amber-light);  color:var(--amber); }
+.task-tag.blue   { background:var(--blue-light);   color:var(--blue); }
+.task-tag.rose   { background:var(--rose-light);   color:var(--rose); }
 
-  /* ── Milestones tab ── */
-  .milestones-list { list-style:none; }
-  .milestone-item {
-    display:flex; align-items:center; gap:14px;
-    padding:14px 0; border-bottom:1px solid var(--border);
-  }
-  .milestone-item:last-child { border-bottom:none; }
+.task-label {
+  font-size:clamp(2rem, 9vw, 3.2rem);
+  font-weight:800; letter-spacing:-0.03em;
+  line-height:1.05; color:var(--text);
+  transition:opacity 0.4s ease, transform 0.4s ease;
+}
+.task-label.fade-out { opacity:0; transform:translateY(-10px); }
 
-  .milestone-icon {
-    flex-shrink:0; width:36px; height:36px; border-radius:50%;
-    display:flex; align-items:center; justify-content:center;
-    font-size:1rem; border:1.5px solid var(--border);
-    transition:all 0.3s;
-  }
-  .milestone-item.reached .milestone-icon {
-    border-color:var(--amber); background:var(--amber-dim);
-    box-shadow:0 0 10px rgba(255,179,71,0.25);
-  }
-  .milestone-item.next .milestone-icon {
-    border-color:rgba(255,179,71,0.35);
-  }
+.task-footer { display:flex; align-items:center; justify-content:space-between; }
+.task-duration {
+  font-size:0.78rem; font-weight:600; color:var(--text-soft);
+  letter-spacing:0.02em;
+}
+.tap-cue {
+  display:flex; align-items:center; gap:6px;
+  font-size:0.68rem; font-weight:600; color:var(--text-soft);
+  letter-spacing:0.02em;
+  animation:breathe 2.5s ease-in-out infinite;
+}
+.tap-cue-dot {
+  width:6px; height:6px; border-radius:50%;
+  background:var(--green); opacity:0.6;
+  animation:dotPulse 2.5s ease-in-out infinite;
+}
+@keyframes breathe   { 0%,100%{opacity:0.5} 50%{opacity:1} }
+@keyframes dotPulse  { 0%,100%{transform:scale(0.8)} 50%{transform:scale(1.2)} }
 
-  .milestone-info { flex:1; }
-  .milestone-days {
-    font-size:0.8rem; font-weight:300; letter-spacing:0.05em;
-    color:var(--muted); margin-bottom:4px;
-  }
-  .milestone-item.reached .milestone-days { color:var(--amber); }
-  .milestone-item.next .milestone-days { color:rgba(240,236,230,0.6); }
+/* ── Completion screen ── */
+.completion { display:none; flex-direction:column; align-items:center; height:100%; padding:32px 24px 40px; overflow-y:auto; }
+.completion.visible { display:flex; }
 
-  .milestone-reward-input {
-    background:transparent; border:none; border-bottom:1px solid var(--border);
-    color:var(--text); font-family:inherit; font-size:0.78rem; font-weight:300;
-    font-style:italic; letter-spacing:0.02em; width:100%; outline:none;
-    padding:2px 0; transition:border-color 0.2s;
-  }
-  .milestone-reward-input:focus { border-color:rgba(255,179,71,0.5); }
-  .milestone-reward-input::placeholder { color:rgba(240,236,230,0.2); font-style:italic; }
-  .milestone-item.reached .milestone-reward-input { color:var(--muted); }
+.completion-header { width:100%; margin-top:60px; margin-bottom:28px; text-align:center; }
+.completion-icon {
+  width:64px; height:64px; border-radius:20px;
+  background:var(--green-light); display:inline-flex; align-items:center; justify-content:center;
+  font-size:1.8rem; margin-bottom:16px;
+  animation:popIn 0.5s cubic-bezier(0.34,1.56,0.64,1);
+}
+.completion-title { font-size:1.6rem; font-weight:800; letter-spacing:-0.03em; color:var(--text); margin-bottom:4px; }
+.completion-sub { font-size:0.82rem; font-weight:500; color:var(--text-mid); }
 
-  /* Progress bar inside milestone */
-  .milestone-progress-wrap { margin-top:5px; }
-  .milestone-progress-track { height:1px; background:var(--border); border-radius:1px; overflow:hidden; }
-  .milestone-progress-fill { height:1px; background:var(--amber); opacity:0.5; border-radius:1px; transition:width 0.6s ease; }
+@keyframes popIn { from{transform:scale(0) rotate(-10deg);opacity:0} to{transform:scale(1) rotate(0deg);opacity:1} }
 
-  .streak-info-row {
-    display:flex; align-items:center; justify-content:space-between;
-    padding:16px 0; border-bottom:1px solid var(--border); margin-bottom:4px;
-  }
-  .streak-info-label { font-size:0.6rem; letter-spacing:0.2em; text-transform:uppercase; color:var(--muted); }
-  .streak-info-value { font-size:1rem; font-weight:200; color:var(--amber); }
+.streak-row {
+  width:100%; display:flex; gap:12px; margin-bottom:16px;
+}
+.stat-card {
+  flex:1; background:var(--white); border-radius:20px;
+  padding:20px 18px; border:1px solid var(--border); box-shadow:var(--shadow);
+}
+.stat-card.accent-green { background:var(--green); border-color:var(--green); }
+.stat-card.accent-green .stat-label { color:rgba(255,255,255,0.7); }
+.stat-card.accent-green .stat-value { color:#fff; }
+.stat-label { font-size:0.62rem; font-weight:700; letter-spacing:0.06em; text-transform:uppercase; color:var(--text-soft); margin-bottom:6px; }
+.stat-value { font-size:2rem; font-weight:800; letter-spacing:-0.03em; color:var(--text); line-height:1; }
+.stat-value span { font-size:0.9rem; font-weight:600; }
 
-  /* ── Restore streak ── */
-  .restore-streak-box {
-    margin-bottom: 4px;
-    border: 1px solid rgba(255,179,71,0.25);
-    border-radius: 10px;
-    padding: 16px 18px;
-    background: rgba(255,179,71,0.05);
-    animation: slideIn 0.3s ease forwards;
-  }
-  .restore-streak-box .rs-top {
-    display: flex; align-items: center; justify-content: space-between; gap: 12px;
-  }
-  .restore-streak-box .rs-info { flex: 1; }
-  .restore-streak-box .rs-label {
-    font-size: 0.58rem; letter-spacing: 0.25em; text-transform: uppercase;
-    color: var(--amber); margin-bottom: 5px;
-  }
-  .restore-streak-box .rs-desc {
-    font-size: 0.78rem; font-weight: 300; color: rgba(240,236,230,0.55);
-    line-height: 1.5; letter-spacing: 0.02em;
-  }
-  .restore-streak-btn {
-    flex-shrink: 0; padding: 10px 16px;
-    background: rgba(255,179,71,0.12); border: 1px solid rgba(255,179,71,0.4);
-    color: var(--amber); font-family: inherit; font-size: 0.68rem;
-    letter-spacing: 0.18em; text-transform: uppercase; cursor: pointer;
-    border-radius: 6px; transition: all 0.25s; white-space: nowrap;
-  }
-  .restore-streak-btn:hover { background: rgba(255,179,71,0.22); border-color: var(--amber); }
-  .restore-streak-box .rs-used {
-    font-size: 0.68rem; font-weight: 300; color: var(--muted);
-    letter-spacing: 0.08em; font-style: italic; text-align: center;
-    padding-top: 10px; border-top: 1px solid var(--border); margin-top: 12px;
-  }
-  .restore-confirm-row {
-    display: flex; gap: 8px; margin-top: 12px;
-    border-top: 1px solid var(--border); padding-top: 12px;
-  }
-  .restore-confirm-btn {
-    flex: 1; padding: 9px 0; background: rgba(255,179,71,0.15);
-    border: 1px solid rgba(255,179,71,0.5); color: var(--amber);
-    font-family: inherit; font-size: 0.65rem; letter-spacing: 0.18em;
-    text-transform: uppercase; cursor: pointer; border-radius: 4px; transition: all 0.2s;
-  }
-  .restore-confirm-btn:hover { background: rgba(255,179,71,0.28); }
-  .restore-cancel-btn {
-    flex: 1; padding: 9px 0; background: none;
-    border: 1px solid var(--border); color: var(--muted);
-    font-family: inherit; font-size: 0.65rem; letter-spacing: 0.18em;
-    text-transform: uppercase; cursor: pointer; border-radius: 4px; transition: all 0.2s;
-  }
-  .restore-cancel-btn:hover { border-color: rgba(240,236,230,0.3); color: var(--text); }
+.milestone-card-v2 {
+  width:100%; background:var(--white); border-radius:20px;
+  padding:20px 22px; border:1px solid var(--border); box-shadow:var(--shadow);
+  margin-bottom:20px; animation:popIn 0.4s 0.3s cubic-bezier(0.34,1.56,0.64,1) both;
+}
+.milestone-card-v2.achieved { background:var(--amber-light); border-color:var(--amber-mid); }
+.mc2-label { font-size:0.62rem; font-weight:700; letter-spacing:0.06em; text-transform:uppercase; color:var(--text-soft); margin-bottom:8px; }
+.milestone-card-v2.achieved .mc2-label { color:var(--amber); }
+.mc2-next { font-size:1rem; font-weight:700; color:var(--text); letter-spacing:-0.01em; }
+.mc2-next span { color:var(--green); }
+.milestone-card-v2.achieved .mc2-next span { color:var(--amber); }
+.mc2-reward { font-size:0.78rem; font-weight:500; color:var(--text-mid); margin-top:4px; }
 
-  .rs-set-row {
-    display: flex; align-items: center; justify-content: center;
-    gap: 20px; padding: 14px 0 4px;
-  }
-  .rs-stepper {
-    width: 36px; height: 36px; border-radius: 50%;
-    background: rgba(255,179,71,0.1); border: 1px solid rgba(255,179,71,0.35);
-    color: var(--amber); font-size: 1.2rem; line-height: 1;
-    cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center;
-    font-family: inherit;
-  }
-  .rs-stepper:hover { background: rgba(255,179,71,0.22); border-color: var(--amber); }
-  .rs-stepper:active { transform: scale(0.92); }
-  .rs-count-wrap { text-align: center; min-width: 60px; }
-  .rs-count-num { font-size: 2rem; font-weight: 200; color: var(--amber); letter-spacing: -0.02em; display: block; line-height: 1; }
-  .rs-count-label { font-size: 0.6rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--muted); }
+.btn-primary {
+  width:100%; padding:16px 28px;
+  background:var(--text); border:none; color:var(--white);
+  font-family:inherit; font-size:0.82rem; font-weight:700;
+  letter-spacing:0.02em; cursor:pointer; border-radius:14px;
+  transition:all 0.2s; -webkit-tap-highlight-color:transparent;
+}
+.btn-primary:hover { background:#2c2420; transform:translateY(-1px); box-shadow:var(--shadow-lg); }
+.btn-primary:active { transform:translateY(0); }
 
-  /* Scrollbar */
-  .overlay-panel::-webkit-scrollbar { width:3px; }
-  .overlay-panel::-webkit-scrollbar-track { background:transparent; }
-  .overlay-panel::-webkit-scrollbar-thumb { background:var(--border); border-radius:2px; }
+.btn-ghost {
+  width:100%; padding:12px 28px; margin-top:10px;
+  background:none; border:1.5px solid var(--border); color:var(--text-mid);
+  font-family:inherit; font-size:0.78rem; font-weight:600;
+  letter-spacing:0.02em; cursor:pointer; border-radius:14px;
+  transition:all 0.2s;
+}
+.btn-ghost:hover { border-color:var(--text-mid); color:var(--text); }
 
-  .main-content { transition:opacity 0.4s; flex:1; display:flex; flex-direction:column; }
-  .main-content.hidden { opacity:0; pointer-events:none; }
-  @media(min-width:480px){ .task-label{font-size:clamp(3rem,8vw,5.5rem)} }
+/* ── Peek button ── */
+.peek-btn {
+  position:fixed; bottom:36px; right:24px;
+  background:var(--text); border:none;
+  width:52px; height:52px; border-radius:16px;
+  display:flex; align-items:center; justify-content:center;
+  cursor:pointer; z-index:10; transition:all 0.2s;
+  -webkit-tap-highlight-color:transparent;
+  box-shadow:0 4px 16px rgba(26,23,20,0.25);
+}
+.peek-btn:hover { transform:translateY(-2px); box-shadow:0 8px 24px rgba(26,23,20,0.3); }
+.peek-btn:active { transform:scale(0.94); }
+.peek-btn svg { width:18px; height:18px; stroke:#fff; }
+
+/* ── Overlay ── */
+.overlay { position:fixed; inset:0; z-index:20; pointer-events:none; display:flex; flex-direction:column; justify-content:flex-end; }
+.overlay-backdrop { position:absolute; inset:0; background:rgba(26,23,20,0.3); opacity:0; transition:opacity 0.35s ease; backdrop-filter:blur(4px); }
+.overlay-panel {
+  position:relative;
+  background:var(--white);
+  border-top:1px solid var(--border);
+  border-radius:28px 28px 0 0;
+  padding:20px 24px 48px;
+  transform:translateY(100%);
+  transition:transform 0.45s cubic-bezier(0.32,0.72,0,1);
+  max-height:82vh; overflow-y:auto;
+}
+.overlay.open { pointer-events:all; }
+.overlay.open .overlay-backdrop { opacity:1; }
+.overlay.open .overlay-panel { transform:translateY(0); }
+
+.overlay-handle { width:40px; height:4px; background:var(--border); border-radius:4px; margin:0 auto 20px; }
+.overlay-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; }
+.overlay-title { font-size:1.1rem; font-weight:800; letter-spacing:-0.02em; color:var(--text); }
+
+.btn-edit {
+  padding:7px 16px; border-radius:100px;
+  background:var(--bg); border:1.5px solid var(--border);
+  color:var(--text-mid); font-family:inherit; font-size:0.68rem; font-weight:700;
+  letter-spacing:0.04em; text-transform:uppercase; cursor:pointer; transition:all 0.2s;
+}
+.btn-edit:hover, .btn-edit.active { background:var(--text); border-color:var(--text); color:var(--white); }
+
+/* ── Tabs ── */
+.overlay-tabs { display:flex; gap:6px; margin-bottom:20px; }
+.overlay-tab {
+  flex:1; padding:9px 0; background:var(--bg); border:1.5px solid transparent;
+  color:var(--text-soft); font-family:inherit; font-size:0.7rem; font-weight:700;
+  letter-spacing:0.04em; text-transform:uppercase; cursor:pointer;
+  transition:all 0.2s; border-radius:10px;
+}
+.overlay-tab.active { background:var(--text); color:var(--white); }
+.tab-panel { display:none; }
+.tab-panel.active { display:block; }
+
+/* ── Task list ── */
+.task-list { list-style:none; }
+.task-item { display:flex; align-items:center; gap:14px; padding:12px 0; border-bottom:1px solid var(--border); }
+.task-item:last-child { border-bottom:none; }
+
+.task-indicator {
+  flex-shrink:0; width:22px; height:22px; border-radius:8px;
+  display:flex; align-items:center; justify-content:center;
+  border:1.5px solid var(--border); transition:all 0.2s;
+}
+.task-item.done .task-indicator { background:var(--green); border-color:var(--green); }
+.task-item.done .task-indicator::after { content:''; display:block; width:8px; height:5px; border-left:2px solid #fff; border-bottom:2px solid #fff; transform:rotate(-45deg) translate(1px,-1px); }
+.task-item.active .task-indicator { background:var(--blue-light); border-color:var(--blue); }
+.task-item.active .task-indicator::after { content:''; display:block; width:7px; height:7px; border-radius:3px; background:var(--blue); }
+.task-item.future .task-indicator { border-color:var(--border); }
+
+.task-info { flex:1; }
+.task-name { font-size:0.88rem; font-weight:600; color:var(--text); }
+.task-time { font-size:0.65rem; font-weight:500; color:var(--text-soft); margin-top:2px; }
+.task-item.done .task-name { text-decoration:line-through; color:var(--text-soft); }
+.task-item.done { opacity:0.6; }
+.task-item.active .task-name { color:var(--blue); }
+.task-item.future .task-name { color:var(--text-mid); }
+
+.tasks-total { font-size:0.65rem; font-weight:600; color:var(--text-soft); text-align:right; margin-top:12px; letter-spacing:0.03em; }
+
+/* ── Edit mode ── */
+.edit-list { list-style:none; display:none; }
+.edit-list.visible { display:block; }
+.task-list.hidden { display:none; }
+
+.edit-item { display:flex; align-items:center; gap:10px; padding:10px 0; border-bottom:1px solid var(--border); animation:slideIn 0.2s ease forwards; }
+.edit-item:last-child { border-bottom:none; }
+@keyframes slideIn { from{opacity:0;transform:translateX(-6px)} to{opacity:1;transform:translateX(0)} }
+
+.drag-handle { cursor:grab; color:var(--text-soft); font-size:0.9rem; padding:4px; flex-shrink:0; opacity:0.5; }
+.drag-handle:hover { opacity:1; }
+.drag-handle:active { cursor:grabbing; }
+
+.edit-fields { flex:1; display:flex; flex-direction:column; gap:6px; }
+.edit-name-input {
+  background:var(--bg); border:1.5px solid var(--border); border-radius:10px;
+  color:var(--text); font-family:inherit; font-size:0.84rem; font-weight:500;
+  padding:8px 12px; width:100%; outline:none; transition:border-color 0.2s;
+}
+.edit-name-input:focus { border-color:var(--blue); }
+.edit-name-input::placeholder { color:var(--text-soft); }
+
+.edit-duration-row { display:flex; align-items:center; gap:8px; }
+.edit-duration-label { font-size:0.6rem; font-weight:700; letter-spacing:0.06em; text-transform:uppercase; color:var(--text-soft); white-space:nowrap; }
+.edit-duration-input {
+  background:var(--bg); border:1.5px solid var(--border); border-radius:8px;
+  color:var(--text); font-family:inherit; font-size:0.8rem; font-weight:500;
+  padding:6px 8px; width:58px; outline:none; transition:border-color 0.2s; text-align:center;
+}
+.edit-duration-input:focus { border-color:var(--blue); }
+
+.delete-btn {
+  background:var(--rose-light); border:none; color:var(--rose);
+  cursor:pointer; width:28px; height:28px; border-radius:8px;
+  font-size:1rem; line-height:1; flex-shrink:0;
+  display:flex; align-items:center; justify-content:center;
+  transition:all 0.2s;
+}
+.delete-btn:hover { background:var(--rose); color:#fff; }
+
+.add-task-btn {
+  display:flex; align-items:center; gap:8px; width:100%; margin-top:14px;
+  padding:12px 0; background:var(--bg); border:1.5px dashed var(--border);
+  border-radius:12px; color:var(--text-soft); font-family:inherit;
+  font-size:0.72rem; font-weight:700; letter-spacing:0.04em; text-transform:uppercase;
+  cursor:pointer; justify-content:center; transition:all 0.25s;
+}
+.add-task-btn:hover { border-color:var(--green); color:var(--green); background:var(--green-light); }
+
+.edit-item.drag-over { opacity:0.3; }
+.edit-item.dragging { opacity:0.15; }
+
+/* ── Milestones ── */
+.milestones-list { list-style:none; }
+.milestone-item { display:flex; align-items:center; gap:14px; padding:14px 0; border-bottom:1px solid var(--border); }
+.milestone-item:last-child { border-bottom:none; }
+
+.milestone-icon {
+  flex-shrink:0; width:40px; height:40px; border-radius:12px;
+  display:flex; align-items:center; justify-content:center;
+  font-size:1.1rem; background:var(--bg); border:1.5px solid var(--border);
+  transition:all 0.3s;
+}
+.milestone-item.reached .milestone-icon { background:var(--green-light); border-color:var(--green-mid); }
+.milestone-item.next    .milestone-icon { background:var(--amber-light); border-color:var(--amber-mid); }
+
+.milestone-info { flex:1; }
+.milestone-days { font-size:0.8rem; font-weight:700; color:var(--text-mid); margin-bottom:4px; }
+.milestone-item.reached .milestone-days { color:var(--green); }
+.milestone-item.next    .milestone-days { color:var(--amber); }
+
+.milestone-reward-input {
+  background:transparent; border:none; border-bottom:1.5px solid var(--border);
+  color:var(--text); font-family:inherit; font-size:0.76rem; font-weight:500;
+  width:100%; outline:none; padding:2px 0; transition:border-color 0.2s;
+}
+.milestone-reward-input:focus { border-color:var(--blue); }
+.milestone-reward-input::placeholder { color:var(--text-soft); }
+.milestone-item.reached .milestone-reward-input { color:var(--text-mid); }
+
+.milestone-progress-wrap { margin-top:6px; }
+.milestone-progress-track { height:3px; background:var(--border); border-radius:4px; overflow:hidden; }
+.milestone-progress-fill { height:3px; background:linear-gradient(90deg, var(--amber), #E8A040); border-radius:4px; transition:width 0.6s ease; }
+
+/* ── Streak info ── */
+.streak-info-row { display:flex; align-items:center; justify-content:space-between; padding:14px 0; border-bottom:1px solid var(--border); }
+.streak-info-label { font-size:0.65rem; font-weight:700; letter-spacing:0.06em; text-transform:uppercase; color:var(--text-soft); }
+.streak-info-value { font-size:0.95rem; font-weight:800; color:var(--text); }
+
+/* ── Set streak box ── */
+.restore-streak-box {
+  margin-bottom:6px; border:1.5px solid var(--border);
+  border-radius:16px; padding:18px; background:var(--bg);
+  animation:slideIn 0.3s ease forwards;
+}
+.restore-streak-box .rs-label { font-size:0.62rem; font-weight:700; letter-spacing:0.06em; text-transform:uppercase; color:var(--blue); margin-bottom:5px; }
+.restore-streak-box .rs-desc { font-size:0.76rem; font-weight:500; color:var(--text-mid); line-height:1.5; }
+
+.rs-set-row { display:flex; align-items:center; justify-content:center; gap:20px; padding:16px 0 6px; }
+.rs-stepper {
+  width:36px; height:36px; border-radius:10px;
+  background:var(--white); border:1.5px solid var(--border);
+  color:var(--text); font-size:1.1rem; cursor:pointer;
+  display:flex; align-items:center; justify-content:center;
+  font-family:inherit; transition:all 0.2s;
+}
+.rs-stepper:hover { background:var(--text); color:var(--white); border-color:var(--text); }
+.rs-stepper:active { transform:scale(0.92); }
+
+.rs-count-wrap { text-align:center; min-width:64px; }
+.rs-count-num { font-size:2.2rem; font-weight:800; letter-spacing:-0.03em; color:var(--text); display:block; line-height:1; }
+.rs-count-label { font-size:0.6rem; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:var(--text-soft); }
+
+.restore-confirm-row { display:flex; gap:8px; margin-top:14px; border-top:1px solid var(--border); padding-top:14px; }
+.restore-confirm-btn {
+  flex:1; padding:10px 0; background:var(--text); border:none;
+  color:var(--white); font-family:inherit; font-size:0.68rem; font-weight:700;
+  letter-spacing:0.04em; text-transform:uppercase; cursor:pointer; border-radius:10px; transition:all 0.2s;
+}
+.restore-confirm-btn:hover { background:#2c2420; }
+.restore-cancel-btn {
+  flex:1; padding:10px 0; background:var(--white); border:1.5px solid var(--border);
+  color:var(--text-mid); font-family:inherit; font-size:0.68rem; font-weight:700;
+  letter-spacing:0.04em; text-transform:uppercase; cursor:pointer; border-radius:10px; transition:all 0.2s;
+}
+.restore-cancel-btn:hover { border-color:var(--text-mid); color:var(--text); }
+
+/* Scrollbar */
+.overlay-panel::-webkit-scrollbar { width:3px; }
+.overlay-panel::-webkit-scrollbar-track { background:transparent; }
+.overlay-panel::-webkit-scrollbar-thumb { background:var(--border); border-radius:4px; }
+
+.main-content { transition:opacity 0.4s; flex:1; display:flex; flex-direction:column; }
+.main-content.hidden { opacity:0; pointer-events:none; }
 </style>
 </head>
 <body>
@@ -300,59 +434,76 @@
 <div id="app">
   <!-- Header -->
   <div class="header" id="header">
-    <span class="logo">Dawn</span>
+    <div class="logo">Dawn<span>.</span></div>
     <div class="header-right">
-      <div class="streak-badge" id="streakBadge" title="View streaks">
+      <div class="streak-badge inactive" id="streakBadge">
         <span class="flame">🔥</span>
         <span id="streakBadgeCount">0</span>
       </div>
-      <span class="step-counter" id="stepCounter">1 / 4</span>
+      <div class="step-pill" id="stepCounter">1 / 4</div>
     </div>
   </div>
 
-  <!-- Focus -->
+  <!-- Main content -->
   <div class="main-content" id="mainContent">
     <div class="focus-area" id="focusArea">
-      <div class="task-label" id="taskLabel"></div>
-      <div class="task-duration" id="taskDuration"></div>
-      <div class="progress-wrap" id="progressWrap" style="width:100%; margin-top:40px;">
-        <div class="progress-track">
-          <div class="progress-fill" id="progressFill" style="width:0%">
-            <div class="progress-dot"></div>
+      <div class="task-card" id="taskCard">
+        <div class="task-tag green" id="taskTag">
+          <span id="taskTagDot">●</span>
+          <span id="taskTagText">Now</span>
+        </div>
+        <div class="task-label" id="taskLabel">Wake Up</div>
+        <div class="task-footer">
+          <div class="task-duration" id="taskDuration">2 min</div>
+          <div class="tap-cue" id="tapHint">
+            <div class="tap-cue-dot"></div>
+            Tap to continue
           </div>
         </div>
       </div>
-      <div class="tap-hint" id="tapHint">Tap to continue</div>
+    </div>
+    <div style="padding:0 24px 28px">
+      <div class="progress-wrap" id="progressWrap">
+        <div class="progress-track">
+          <div class="progress-fill" id="progressFill" style="width:0%"></div>
+        </div>
+      </div>
     </div>
   </div>
 
   <!-- Completion -->
   <div class="completion" id="completionScreen">
-    <span class="completion-check">✦</span>
-    <div class="completion-title">Routine Complete</div>
-    <div class="completion-sub" id="completionSub">Great start to the day</div>
-
-    <div class="streak-display">
-      <div class="streak-flame-big">🔥</div>
-      <div class="streak-count-big" id="streakCountBig">0</div>
-      <div class="streak-label">day streak</div>
+    <div class="completion-header">
+      <div class="completion-icon">✦</div>
+      <div class="completion-title">All done!</div>
+      <div class="completion-sub" id="completionSub">Great start to the day</div>
     </div>
 
-    <div class="milestone-card" id="milestoneCard">
-      <div class="mc-label" id="mcLabel">Next milestone</div>
-      <div class="mc-next" id="mcNext"></div>
-      <div class="mc-reward" id="mcReward"></div>
+    <div class="streak-row">
+      <div class="stat-card accent-green">
+        <div class="stat-label">Day streak</div>
+        <div class="stat-value"><span id="streakCountBig">0</span> 🔥</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Best</div>
+        <div class="stat-value" id="longestBig">0<span> days</span></div>
+      </div>
     </div>
 
-    <button class="restart-btn" id="restartBtn">Start a new day</button>
+    <div class="milestone-card-v2" id="milestoneCard">
+      <div class="mc2-label" id="mcLabel">Next milestone</div>
+      <div class="mc2-next" id="mcNext"></div>
+      <div class="mc2-reward" id="mcReward"></div>
+    </div>
+
+    <button class="btn-primary" id="restartBtn">Start a new day</button>
+    <button class="btn-ghost" id="homeBtn" onclick="openOverlay('tasks')">View routine</button>
   </div>
-
-
 </div>
 
 <!-- Peek button -->
 <button class="peek-btn" id="peekBtn" aria-label="View list">
-  <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+  <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
     <path d="M4 6h16M4 12h16M4 18h10"/>
   </svg>
 </button>
@@ -364,16 +515,14 @@
     <div class="overlay-handle"></div>
     <div class="overlay-header">
       <div class="overlay-title">Morning Routine</div>
-      <button class="edit-toggle-btn" id="editToggleBtn">Edit</button>
+      <button class="btn-edit" id="editToggleBtn">Edit</button>
     </div>
 
-    <!-- Tabs -->
     <div class="overlay-tabs">
       <button class="overlay-tab active" data-tab="tasks">Tasks</button>
       <button class="overlay-tab" data-tab="milestones">Milestones</button>
     </div>
 
-    <!-- Tasks tab -->
     <div class="tab-panel active" id="tab-tasks">
       <ul class="task-list" id="taskList"></ul>
       <ul class="edit-list" id="editList"></ul>
@@ -381,13 +530,12 @@
       <div class="tasks-total" id="overlayTotal"></div>
     </div>
 
-    <!-- Milestones tab -->
     <div class="tab-panel" id="tab-milestones">
       <div class="streak-info-row">
         <span class="streak-info-label">Current streak</span>
         <span class="streak-info-value" id="streakInfoValue">🔥 0 days</span>
       </div>
-      <div class="streak-info-row" style="border-bottom:none; padding-bottom:20px;">
+      <div class="streak-info-row" style="border-bottom:none; padding-bottom:16px;">
         <span class="streak-info-label">Longest streak</span>
         <span class="streak-info-value" id="longestInfoValue">0 days</span>
       </div>
@@ -397,123 +545,68 @@
 </div>
 
 <script>
-/* ─────────────────────────────────────────
-   DATA & STORAGE
-───────────────────────────────────────── */
+/* ── DATA ── */
 const DEFAULT_TASKS = [
-  { name: 'Wake Up & Make Bed', duration: 2 },
+  { name: 'Wake Up & Make Bed', duration: 2  },
   { name: 'Meditate',           duration: 10 },
   { name: 'Drink 500ml Water',  duration: 1  },
   { name: 'Yoga / Stretch',     duration: 15 },
 ];
-
-const MILESTONE_DAYS = [3, 7, 14, 30, 60, 100];
+const MILESTONE_DAYS  = [3, 7, 14, 30, 60, 100];
 const MILESTONE_ICONS = ['🌱','⚡','🌙','🏆','💎','👑'];
+const TAG_COLORS = ['green','blue','amber','rose','green','blue'];
 
-function load(key, fallback) {
-  try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; } catch { return fallback; }
-}
-function save(key, val) {
-  try { localStorage.setItem(key, JSON.stringify(val)); } catch {}
-}
+function load(k, fb) { try { const v=localStorage.getItem(k); return v?JSON.parse(v):fb; } catch { return fb; } }
+function save(k, v)  { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} }
 
-let tasks     = load('dawn-tasks', DEFAULT_TASKS);
-let streak    = load('dawn-streak', { count: 0, longest: 0, lastDate: null });
-let rewards   = load('dawn-rewards', {}); // { "3": "...", "7": "...", ... }
-let restoreData = load('dawn-restore', { lastUsedDate: null }); // track restore usage
+let tasks       = load('dawn3-tasks',   DEFAULT_TASKS);
+let streak      = load('dawn3-streak',  { count:0, longest:0, lastDate:null });
+let rewards     = load('dawn3-rewards', {});
+let restoreData = load('dawn3-restore', { lastUsedDate:null });
 
-function saveTasks()   { save('dawn-tasks', tasks); }
-function saveStreak()  { save('dawn-streak', streak); }
-function saveRewards() { save('dawn-rewards', rewards); }
-function saveRestore() { save('dawn-restore', restoreData); }
+const saveTasks   = () => save('dawn3-tasks',   tasks);
+const saveStreak  = () => save('dawn3-streak',  streak);
+const saveRewards = () => save('dawn3-rewards', rewards);
+const saveRestore = () => save('dawn3-restore', restoreData);
 
-/* ─────────────────────────────────────────
-   RESTORE STREAK LOGIC
-───────────────────────────────────────── */
+/* ── STREAK LOGIC ── */
+function todayStr() { return new Date().toISOString().slice(0,10); }
+
 function weekStr(date) {
-  // Returns ISO year + week number (e.g. "2025-W12")
-  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
-  const dayNum = d.getUTCDay() || 7;
-  d.setUTCDate(d.getUTCDate() + 4 - dayNum);
-  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
-  const week = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
-  return `${d.getUTCFullYear()}-W${String(week).padStart(2,'0')}`;
-}
-
-function canRestoreStreak() {
-  if (isStreakAlive()) return false; // streak isn't broken
-  if (streak.count === 0) return false; // no streak to restore
-  const today = new Date();
-  const thisWeek = weekStr(today);
-  if (restoreData.lastUsedDate) {
-    const usedWeek = weekStr(new Date(restoreData.lastUsedDate));
-    if (usedWeek === thisWeek) return false; // already used this week
-  }
-  // Only allow restore if streak was broken within the last 2 days
-  if (!streak.lastDate) return false;
-  const last = new Date(streak.lastDate + 'T00:00:00');
-  const diffDays = Math.round((today - last) / 86400000);
-  return diffDays <= 2;
-}
-
-function restoreStreak() {
-  const yesterday = new Date();
-  yesterday.setDate(yesterday.getDate() - 1);
-  streak.lastDate = yesterday.toISOString().slice(0, 10);
-  restoreData.lastUsedDate = todayStr();
-  saveStreak();
-  saveRestore();
-  updateStreakBadge();
-}
-
-/* ─────────────────────────────────────────
-   STREAK LOGIC
-───────────────────────────────────────── */
-function todayStr() {
-  return new Date().toISOString().slice(0, 10); // "2025-03-15"
-}
-
-function checkAndUpdateStreak() {
-  const today = todayStr();
-  if (streak.lastDate === today) return; // already done today
-
-  const yesterday = new Date();
-  yesterday.setDate(yesterday.getDate() - 1);
-  const yStr = yesterday.toISOString().slice(0, 10);
-
-  if (streak.lastDate === yStr) {
-    // consecutive day
-    streak.count++;
-  } else if (streak.lastDate === null || streak.lastDate < yStr) {
-    // missed a day or first time
-    streak.count = 1;
-  }
-
-  streak.lastDate = today;
-  if (streak.count > streak.longest) streak.longest = streak.count;
-  saveStreak();
-}
-
-function getNextMilestone() {
-  for (const m of MILESTONE_DAYS) {
-    if (streak.count < m) return m;
-  }
-  return null; // all milestones reached
+  const d=new Date(Date.UTC(date.getFullYear(),date.getMonth(),date.getDate()));
+  const day=d.getUTCDay()||7; d.setUTCDate(d.getUTCDate()+4-day);
+  const y=new Date(Date.UTC(d.getUTCFullYear(),0,1));
+  return `${d.getUTCFullYear()}-W${String(Math.ceil((((d-y)/86400000)+1)/7)).padStart(2,'0')}`;
 }
 
 function isStreakAlive() {
   if (!streak.lastDate) return false;
-  const today = todayStr();
-  const yesterday = new Date();
-  yesterday.setDate(yesterday.getDate() - 1);
-  const yStr = yesterday.toISOString().slice(0, 10);
-  return streak.lastDate === today || streak.lastDate === yStr;
+  const yd=new Date(); yd.setDate(yd.getDate()-1);
+  return streak.lastDate===todayStr()||streak.lastDate===yd.toISOString().slice(0,10);
 }
 
-/* ─────────────────────────────────────────
-   DOM REFS
-───────────────────────────────────────── */
-const $ = id => document.getElementById(id);
+function checkAndUpdateStreak() {
+  const today=todayStr(); if(streak.lastDate===today) return;
+  const yd=new Date(); yd.setDate(yd.getDate()-1); const yStr=yd.toISOString().slice(0,10);
+  if(streak.lastDate===yStr) streak.count++;
+  else streak.count=1;
+  streak.lastDate=today;
+  if(streak.count>streak.longest) streak.longest=streak.count;
+  saveStreak();
+}
+
+function getNextMilestone() { for(const m of MILESTONE_DAYS) if(streak.count<m) return m; return null; }
+
+function canRestoreStreak() {
+  if(isStreakAlive()||streak.count===0) return false;
+  const thisWeek=weekStr(new Date());
+  if(restoreData.lastUsedDate&&weekStr(new Date(restoreData.lastUsedDate))===thisWeek) return false;
+  if(!streak.lastDate) return false;
+  return Math.round((new Date()-new Date(streak.lastDate+'T00:00:00'))/86400000)<=2;
+}
+
+/* ── DOM ── */
+const $=id=>document.getElementById(id);
 const taskLabel=$('taskLabel'), taskDuration=$('taskDuration'), stepCounter=$('stepCounter');
 const progressFill=$('progressFill'), mainContent=$('mainContent'), completionScreen=$('completionScreen');
 const progressWrap=$('progressWrap'), header=$('header'), tapHint=$('tapHint');
@@ -522,209 +615,148 @@ const taskList=$('taskList'), editList=$('editList'), addTaskBtn=$('addTaskBtn')
 const editToggleBtn=$('editToggleBtn'), restartBtn=$('restartBtn'), focusArea=$('focusArea');
 const flashEl=$('flash');
 const streakBadge=$('streakBadge'), streakBadgeCount=$('streakBadgeCount');
-const streakCountBig=$('streakCountBig'), milestoneCard=$('milestoneCard');
+const streakCountBig=$('streakCountBig'), longestBig=$('longestBig'), milestoneCard=$('milestoneCard');
 const mcLabel=$('mcLabel'), mcNext=$('mcNext'), mcReward=$('mcReward');
 const completionSub=$('completionSub');
 const milestonesList=$('milestonesList');
 const streakInfoValue=$('streakInfoValue'), longestInfoValue=$('longestInfoValue');
 
-let currentIndex=0, timer=null, elapsed=0, editMode=false, dragSrcIndex=null;
+let currentIndex=0, timer=null, elapsed=0, editMode=false, dragSrcIndex=null, dragSrcEl=null;
 
-/* ─────────────────────────────────────────
-   AUDIO
-───────────────────────────────────────── */
+/* ── AUDIO ── */
 let audioCtx=null;
-function getCtx() { if(!audioCtx) audioCtx=new(window.AudioContext||window.webkitAudioContext)(); return audioCtx; }
-function tone(freq,start,dur,vol=0.15,type='sine') {
-  try {
-    const c=getCtx(),o=c.createOscillator(),g=c.createGain();
-    o.connect(g); g.connect(c.destination); o.type=type; o.frequency.value=freq;
-    g.gain.setValueAtTime(0,c.currentTime+start);
-    g.gain.linearRampToValueAtTime(vol,c.currentTime+start+0.02);
-    g.gain.exponentialRampToValueAtTime(0.001,c.currentTime+start+dur);
-    o.start(c.currentTime+start); o.stop(c.currentTime+start+dur);
-  } catch {}
+function getCtx(){ if(!audioCtx) audioCtx=new(window.AudioContext||window.webkitAudioContext)(); return audioCtx; }
+function tone(freq,start,dur,vol=0.1,type='sine'){
+  try{const c=getCtx(),o=c.createOscillator(),g=c.createGain();o.connect(g);g.connect(c.destination);o.type=type;o.frequency.value=freq;g.gain.setValueAtTime(0,c.currentTime+start);g.gain.linearRampToValueAtTime(vol,c.currentTime+start+0.02);g.gain.exponentialRampToValueAtTime(0.001,c.currentTime+start+dur);o.start(c.currentTime+start);o.stop(c.currentTime+start+dur);}catch{}
 }
-function playClick()  { tone(880,0,0.06,0.14); }
-function playChime()  { [[523.25,0],[659.25,0.15],[783.99,0.3]].forEach(([f,d])=>tone(f,d,0.5)); }
-function playMilestone() {
-  [[523.25,0],[659.25,0.1],[783.99,0.2],[1046.5,0.32],[1318.5,0.46]].forEach(([f,d])=>tone(f,d,0.6,0.13));
-}
+function playClick()     { tone(700,0,0.06,0.09); }
+function playChime()     { [[523.25,0],[659.25,0.15],[783.99,0.3]].forEach(([f,d])=>tone(f,d,0.55,0.1)); }
+function playMilestone() { [[523.25,0],[659.25,0.1],[783.99,0.2],[1046.5,0.32],[1318.5,0.46]].forEach(([f,d])=>tone(f,d,0.6,0.1)); }
+function haptic(p=12)    { if(navigator.vibrate) navigator.vibrate(p); }
+function triggerFlash()  { flashEl.classList.remove('fire'); void flashEl.offsetWidth; flashEl.classList.add('fire'); }
 
-function haptic(p=12) { if(navigator.vibrate) navigator.vibrate(p); }
-function triggerFlash() { flashEl.classList.remove('fire'); void flashEl.offsetWidth; flashEl.classList.add('fire'); }
-
-/* ─────────────────────────────────────────
-   STREAK UI
-───────────────────────────────────────── */
+/* ── STREAK UI ── */
 function updateStreakBadge() {
-  const alive = isStreakAlive();
-  streakBadgeCount.textContent = streak.count;
-  streakBadge.classList.toggle('active', alive && streak.count > 0);
+  const alive=isStreakAlive();
+  streakBadgeCount.textContent=streak.count;
+  streakBadge.classList.toggle('active', alive&&streak.count>0);
+  streakBadge.classList.toggle('inactive', !(alive&&streak.count>0));
 }
 
 function renderCompletionStreak() {
-  streakCountBig.textContent = streak.count;
-
-  // Milestone card
-  const next = getNextMilestone();
-  const justHit = MILESTONE_DAYS.includes(streak.count);
-
-  if (justHit) {
-    milestoneCard.className = 'milestone-card achieved';
-    mcLabel.textContent = '🎉 Milestone reached!';
-    mcNext.innerHTML = `<span>${streak.count} days</span>`;
-    const r = rewards[streak.count] || '';
-    mcReward.textContent = r ? `Your reward: ${r}` : 'Set your reward in Milestones';
-    playMilestone();
-    haptic([60,40,60,40,120]);
-  } else if (next) {
-    milestoneCard.className = 'milestone-card';
-    const daysLeft = next - streak.count;
-    mcLabel.textContent = 'Next milestone';
-    mcNext.innerHTML = `<span>${next} days</span> — ${daysLeft} day${daysLeft!==1?'s':''} to go`;
-    const r = rewards[next] || '';
-    mcReward.textContent = r ? `Reward: ${r}` : 'Set a reward in Milestones ↗';
+  streakCountBig.textContent=streak.count;
+  longestBig.innerHTML=`${streak.longest}<span> days</span>`;
+  const next=getNextMilestone();
+  const justHit=MILESTONE_DAYS.includes(streak.count);
+  if(justHit){
+    milestoneCard.className='milestone-card-v2 achieved';
+    mcLabel.textContent='🎉 Milestone reached!';
+    mcNext.innerHTML=`<span>${streak.count} days</span>`;
+    mcReward.textContent=rewards[streak.count]?`Your reward: ${rewards[streak.count]}`:'Set your reward in Milestones';
+    playMilestone(); haptic([60,40,60,40,120]);
+  } else if(next){
+    milestoneCard.className='milestone-card-v2';
+    mcLabel.textContent='Next milestone';
+    const left=next-streak.count;
+    mcNext.innerHTML=`<span>${next} days</span> — ${left} day${left!==1?'s':''} to go`;
+    mcReward.textContent=rewards[next]?`Reward: ${rewards[next]}`:'Set a reward in Milestones ↗';
   } else {
-    milestoneCard.className = 'milestone-card achieved';
-    mcLabel.textContent = '👑 All milestones reached!';
-    mcNext.innerHTML = `<span>${streak.count} days</span> and counting`;
-    mcReward.textContent = 'Legendary.';
+    milestoneCard.className='milestone-card-v2 achieved';
+    mcLabel.textContent='👑 All milestones reached!';
+    mcNext.innerHTML=`<span>${streak.count} days</span> and counting`;
+    mcReward.textContent='Legendary.';
   }
 }
 
-/* ─────────────────────────────────────────
-   MILESTONES LIST (overlay tab)
-───────────────────────────────────────── */
+/* ── MILESTONES ── */
 function renderMilestonesList() {
-  milestonesList.innerHTML = '';
-  streakInfoValue.textContent = `🔥 ${streak.count} day${streak.count!==1?'s':''}`;
-  longestInfoValue.textContent = `${streak.longest} day${streak.longest!==1?'s':''}`;
-
-  // Remove any existing restore box to avoid duplicates
-  const existing = document.querySelector('.restore-streak-box');
-  if (existing) existing.remove();
-  const restoreBox = document.createElement('div');
-  restoreBox.className = 'restore-streak-box';
-
-  const today = new Date();
-  const thisWeek = weekStr(today);
-  const usedThisWeek = restoreData.lastUsedDate && weekStr(new Date(restoreData.lastUsedDate)) === thisWeek;
-
-  if (usedThisWeek) {
-    // Already set streak this week — show read-only state
-    restoreBox.innerHTML = `
-      <div class="rs-top">
-        <div class="rs-info">
-          <div class="rs-label">🛡 Streak shield</div>
-          <div class="rs-desc">Streak set this week. Come back next week to adjust again.</div>
-        </div>
-      </div>`;
+  milestonesList.innerHTML='';
+  streakInfoValue.textContent=`🔥 ${streak.count} day${streak.count!==1?'s':''}`;
+  longestInfoValue.textContent=`${streak.longest} day${streak.longest!==1?'s':''}`;
+  const existing=document.querySelector('.restore-streak-box');
+  if(existing) existing.remove();
+  const box=document.createElement('div'); box.className='restore-streak-box';
+  const thisWeek=weekStr(new Date());
+  const usedThisWeek=restoreData.lastUsedDate&&weekStr(new Date(restoreData.lastUsedDate))===thisWeek;
+  if(usedThisWeek){
+    box.innerHTML=`<div class="rs-label">🛡 Streak shield</div><div class="rs-desc">Streak set this week. Come back next week to adjust again.</div>`;
   } else {
-    // Available — show the setter
-    restoreBox.innerHTML = `
-      <div class="rs-top">
-        <div class="rs-info">
-          <div class="rs-label">🛡 Set streak</div>
-          <div class="rs-desc">Manually set your streak count — once per week.</div>
-        </div>
-      </div>
+    box.innerHTML=`
+      <div class="rs-label">🛡 Set streak</div>
+      <div class="rs-desc">Manually set your streak count — once per week.</div>
       <div class="rs-set-row">
         <button class="rs-stepper" id="rsDown">−</button>
-        <div class="rs-count-wrap">
-          <span class="rs-count-num" id="rsCount">${streak.count}</span>
-          <span class="rs-count-label">days</span>
-        </div>
+        <div class="rs-count-wrap"><span class="rs-count-num" id="rsCount">${streak.count}</span><span class="rs-count-label">days</span></div>
         <button class="rs-stepper" id="rsUp">+</button>
       </div>
       <div class="restore-confirm-row">
         <button class="restore-confirm-btn" id="confirmSetBtn">Save streak</button>
         <button class="restore-cancel-btn" id="cancelSetBtn">Cancel</button>
       </div>`;
-
-    let draft = streak.count;
-    const rsCountEl = restoreBox.querySelector('#rsCount');
-
-    restoreBox.querySelector('#rsDown').addEventListener('click', () => {
-      if (draft > 0) { draft--; rsCountEl.textContent = draft; }
+    let draft=streak.count;
+    const rsEl=box.querySelector('#rsCount');
+    box.querySelector('#rsDown').addEventListener('click',()=>{ if(draft>0){draft--;rsEl.textContent=draft;} });
+    box.querySelector('#rsUp').addEventListener('click',()=>{ draft++;rsEl.textContent=draft; });
+    box.querySelector('#confirmSetBtn').addEventListener('click',()=>{
+      streak.count=draft; if(draft>streak.longest) streak.longest=draft;
+      const yd=new Date(); yd.setDate(yd.getDate()-1); streak.lastDate=yd.toISOString().slice(0,10);
+      restoreData.lastUsedDate=todayStr(); saveStreak(); saveRestore(); updateStreakBadge(); renderMilestonesList(); haptic([30,20,60]);
     });
-    restoreBox.querySelector('#rsUp').addEventListener('click', () => {
-      draft++; rsCountEl.textContent = draft;
-    });
-    restoreBox.querySelector('#confirmSetBtn').addEventListener('click', () => {
-      streak.count = draft;
-      if (draft > streak.longest) streak.longest = draft;
-      // Mark last date as yesterday so streak stays alive after completing today
-      const yesterday = new Date();
-      yesterday.setDate(yesterday.getDate() - 1);
-      streak.lastDate = yesterday.toISOString().slice(0, 10);
-      restoreData.lastUsedDate = todayStr();
-      saveStreak(); saveRestore(); updateStreakBadge();
-      renderMilestonesList();
-      haptic([30, 20, 60]);
-    });
-    restoreBox.querySelector('#cancelSetBtn').addEventListener('click', () => {
-      renderMilestonesList();
-    });
+    box.querySelector('#cancelSetBtn').addEventListener('click',()=>renderMilestonesList());
   }
+  milestonesList.parentNode.insertBefore(box, milestonesList);
 
-  // Insert restore box before the milestones list
-  milestonesList.parentNode.insertBefore(restoreBox, milestonesList);
-  MILESTONE_DAYS.forEach((days, i) => {
-    const reached = streak.count >= days;
-    const isNext  = !reached && getNextMilestone() === days;
-    const li = document.createElement('li');
-    li.className = 'milestone-item' + (reached?' reached':isNext?' next':'');
-
-    const pct = reached ? 100 : Math.min(100, Math.round((streak.count / days) * 100));
-
-    li.innerHTML = `
+  MILESTONE_DAYS.forEach((days,i)=>{
+    const reached=streak.count>=days;
+    const isNext=!reached&&getNextMilestone()===days;
+    const li=document.createElement('li');
+    li.className='milestone-item'+(reached?' reached':isNext?' next':'');
+    const pct=reached?100:Math.min(100,Math.round((streak.count/days)*100));
+    li.innerHTML=`
       <div class="milestone-icon">${MILESTONE_ICONS[i]}</div>
       <div class="milestone-info">
         <div class="milestone-days">${days} day${days!==1?'s':''} ${reached?'✓':''}</div>
-        <input class="milestone-reward-input"
-          type="text"
-          placeholder="${reached?'Reward reached':'Set your reward...'}"
-          value="${rewards[days]||''}"
-          data-days="${days}"
-          ${reached?'readonly':''}
-        >
-        ${!reached ? `
-        <div class="milestone-progress-wrap">
-          <div class="milestone-progress-track">
-            <div class="milestone-progress-fill" style="width:${pct}%"></div>
-          </div>
-        </div>` : ''}
+        <input class="milestone-reward-input" type="text" placeholder="${reached?'Reward reached':'Set your reward...'}" value="${rewards[days]||''}" data-days="${days}" ${reached?'readonly':''}>
+        ${!reached?`<div class="milestone-progress-wrap"><div class="milestone-progress-track"><div class="milestone-progress-fill" style="width:${pct}%"></div></div></div>`:''}
       </div>`;
-
-    if (!reached) {
-      li.querySelector('.milestone-reward-input').addEventListener('input', e => {
-        rewards[days] = e.target.value;
-        saveRewards();
-      });
-    }
-
+    if(!reached) li.querySelector('.milestone-reward-input').addEventListener('input',e=>{ rewards[days]=e.target.value; saveRewards(); });
     milestonesList.appendChild(li);
   });
 }
 
-/* ─────────────────────────────────────────
-   FOCUS / TIMER
-───────────────────────────────────────── */
+/* ── TASK RENDERING ── */
 function formatDuration(min) { return min===1?'1 min':`${min} min`; }
 function updateProgress(pct) { progressFill.style.width=pct+'%'; }
 
+function getTagColor(index) { return TAG_COLORS[index % TAG_COLORS.length]; }
+
 function renderTask(index, transition=true) {
-  if(index>=tasks.length){showCompletion();return;}
+  if(index>=tasks.length){ showCompletion(); return; }
   const task=tasks[index];
   stepCounter.textContent=`${index+1} / ${tasks.length}`;
+  const tagEl=$('taskTagText');
+  const tagWrap=$('taskTag');
+  const color=getTagColor(index);
+  const labels=['Now','Focus','Hydrate','Move','Breathe','Rest','Reflect','Energize'];
+  const tagLabel=labels[index]||'Now';
+
   if(transition){
     taskLabel.classList.add('fade-out');
-    setTimeout(()=>{ taskLabel.textContent=task.name.toUpperCase(); taskDuration.textContent=formatDuration(task.duration); taskLabel.classList.remove('fade-out'); },400);
+    setTimeout(()=>{
+      taskLabel.textContent=task.name;
+      taskDuration.textContent=formatDuration(task.duration);
+      taskLabel.classList.remove('fade-out');
+      tagWrap.className='task-tag '+color;
+      tagEl.textContent=tagLabel;
+    },380);
   } else {
-    taskLabel.textContent=task.name.toUpperCase(); taskDuration.textContent=formatDuration(task.duration);
+    taskLabel.textContent=task.name;
+    taskDuration.textContent=formatDuration(task.duration);
+    tagWrap.className='task-tag '+color;
+    tagEl.textContent=tagLabel;
   }
-  startTimer(task.duration); renderList();
+  startTimer(task.duration);
+  renderList();
 }
 
 function startTimer(minutes) {
@@ -741,35 +773,30 @@ function nextTask() {
 
 function showCompletion() {
   clearInterval(timer); updateProgress(100);
-  checkAndUpdateStreak();
-  playChime();
-  updateStreakBadge();
+  checkAndUpdateStreak(); playChime(); updateStreakBadge();
   setTimeout(()=>{
     mainContent.classList.add('hidden');
     header.style.opacity='0';
-    tapHint.style.display='none';
     completionScreen.classList.add('visible');
     progressWrap.style.opacity='0';
     renderCompletionStreak();
-  },600);
+  },500);
 }
 
 function restart() {
   currentIndex=0; elapsed=0;
   completionScreen.classList.remove('visible');
   mainContent.classList.remove('hidden');
-  header.style.opacity='1'; tapHint.style.display=''; progressWrap.style.opacity='1';
+  header.style.opacity='1'; progressWrap.style.opacity='1';
   renderTask(0,false);
 }
 
-/* ─────────────────────────────────────────
-   TASK LIST
-───────────────────────────────────────── */
+/* ── TASK LIST ── */
 function renderList() {
   taskList.innerHTML='';
-  const total = tasks.reduce((sum,t)=>sum+t.duration,0);
-  const totalEl = $('overlayTotal');
-  if (totalEl) totalEl.textContent = `${total} min total`;
+  const total=tasks.reduce((s,t)=>s+t.duration,0);
+  const totalEl=$('overlayTotal');
+  if(totalEl) totalEl.textContent=`${total} min total`;
   tasks.forEach((t,i)=>{
     const li=document.createElement('li');
     li.className='task-item '+(i<currentIndex?'done':i===currentIndex?'active':'future');
@@ -778,26 +805,20 @@ function renderList() {
   });
 }
 
-/* ─────────────────────────────────────────
-   EDIT LIST — touch & mouse drag reorder
-───────────────────────────────────────── */
-let dragSrcEl = null;
-
-function reorderTasks(fromIdx, toIdx) {
-  if (fromIdx === toIdx) return;
-  const moved = tasks.splice(fromIdx, 1)[0];
-  tasks.splice(toIdx, 0, moved);
-  if (fromIdx === currentIndex) currentIndex = toIdx;
-  else if (fromIdx < currentIndex && toIdx >= currentIndex) currentIndex--;
-  else if (fromIdx > currentIndex && toIdx <= currentIndex) currentIndex++;
+/* ── EDIT LIST ── */
+function reorderTasks(from, to) {
+  if(from===to) return;
+  const moved=tasks.splice(from,1)[0]; tasks.splice(to,0,moved);
+  if(from===currentIndex) currentIndex=to;
+  else if(from<currentIndex&&to>=currentIndex) currentIndex--;
+  else if(from>currentIndex&&to<=currentIndex) currentIndex++;
   saveTasks(); renderEditList(); syncFocus(currentIndex);
 }
 
 function renderEditList() {
   editList.innerHTML='';
-  const total = tasks.reduce((sum,t)=>sum+t.duration,0);
-  const totalEl = $('overlayTotal');
-  if (totalEl) totalEl.textContent = `${total} min total`;
+  const total=tasks.reduce((s,t)=>s+t.duration,0);
+  const totalEl=$('overlayTotal'); if(totalEl) totalEl.textContent=`${total} min total`;
   tasks.forEach((t,i)=>{
     const li=document.createElement('li');
     li.className='edit-item'; li.dataset.index=i; li.style.animationDelay=(i*40)+'ms';
@@ -810,7 +831,6 @@ function renderEditList() {
         </div>
       </div>
       <button class="delete-btn" data-i="${i}">×</button>`;
-
     li.querySelector('.edit-name-input').addEventListener('input',e=>{tasks[+e.target.dataset.i].name=e.target.value||'New task';saveTasks();syncFocus(+e.target.dataset.i);});
     li.querySelector('.edit-duration-input').addEventListener('input',e=>{tasks[+e.target.dataset.i].duration=Math.max(1,Math.min(120,parseInt(e.target.value)||1));saveTasks();syncFocus(+e.target.dataset.i);});
     li.querySelector('.delete-btn').addEventListener('click',e=>{
@@ -818,102 +838,57 @@ function renderEditList() {
       tasks.splice(idx,1); if(currentIndex>=tasks.length) currentIndex=tasks.length-1;
       saveTasks(); renderEditList(); syncFocus(currentIndex);
     });
-
-    // ── Touch drag via handle ──
-    const handle = li.querySelector('.drag-handle');
-    handle.addEventListener('touchstart', onTouchStart, { passive: false });
-
-    // ── Mouse drag (desktop) ──
-    li.draggable = true;
-    li.addEventListener('dragstart', e => { dragSrcIndex=i; dragSrcEl=li; setTimeout(()=>li.classList.add('dragging'),0); e.dataTransfer.effectAllowed='move'; });
-    li.addEventListener('dragend',   () => { li.classList.remove('dragging'); document.querySelectorAll('.edit-item').forEach(el=>el.classList.remove('drag-over')); });
-    li.addEventListener('dragover',  e => { e.preventDefault(); if(li!==dragSrcEl) li.classList.add('drag-over'); });
-    li.addEventListener('dragleave', () => li.classList.remove('drag-over'));
-    li.addEventListener('drop', e => {
-      e.preventDefault(); li.classList.remove('drag-over');
-      if(dragSrcIndex===null||dragSrcIndex===i) return;
-      reorderTasks(dragSrcIndex, i);
-    });
-
+    li.querySelector('.drag-handle').addEventListener('touchstart', onTouchStart, {passive:false});
+    li.draggable=true;
+    li.addEventListener('dragstart',e=>{dragSrcIndex=i;dragSrcEl=li;setTimeout(()=>li.classList.add('dragging'),0);e.dataTransfer.effectAllowed='move';});
+    li.addEventListener('dragend',()=>{li.classList.remove('dragging');document.querySelectorAll('.edit-item').forEach(el=>el.classList.remove('drag-over'));});
+    li.addEventListener('dragover',e=>{e.preventDefault();if(li!==dragSrcEl)li.classList.add('drag-over');});
+    li.addEventListener('dragleave',()=>li.classList.remove('drag-over'));
+    li.addEventListener('drop',e=>{e.preventDefault();li.classList.remove('drag-over');if(dragSrcIndex===null||dragSrcIndex===i)return;reorderTasks(dragSrcIndex,i);});
     editList.appendChild(li);
   });
 }
 
-/* ── Touch drag implementation ── */
-let touchDragIdx = null, touchClone = null, touchOffsetY = 0;
-
+let touchDragIdx=null, touchClone=null, touchOffsetY=0;
 function onTouchStart(e) {
   e.preventDefault();
-  const handle = e.currentTarget;
-  const li = handle.closest('.edit-item');
-  touchDragIdx = +li.dataset.index;
-
-  const rect = li.getBoundingClientRect();
-  touchOffsetY = e.touches[0].clientY - rect.top;
-
-  // Create floating clone
-  touchClone = li.cloneNode(true);
-  touchClone.style.cssText = `
-    position:fixed; left:${rect.left}px; top:${rect.top}px;
-    width:${rect.width}px; z-index:999; opacity:0.92;
-    background:rgba(34,34,36,0.95); border-radius:6px;
-    box-shadow:0 8px 32px rgba(0,0,0,0.5);
-    pointer-events:none; transition:none;
-  `;
-  document.body.appendChild(touchClone);
-  li.style.opacity = '0.25';
-
-  document.addEventListener('touchmove', onTouchMove, { passive: false });
-  document.addEventListener('touchend',  onTouchEnd);
+  const li=e.currentTarget.closest('.edit-item');
+  touchDragIdx=+li.dataset.index;
+  const rect=li.getBoundingClientRect();
+  touchOffsetY=e.touches[0].clientY-rect.top;
+  touchClone=li.cloneNode(true);
+  touchClone.style.cssText=`position:fixed;left:${rect.left}px;top:${rect.top}px;width:${rect.width}px;z-index:999;opacity:0.92;background:var(--white);border-radius:12px;box-shadow:var(--shadow-lg);pointer-events:none;`;
+  document.body.appendChild(touchClone); li.style.opacity='0.2';
+  document.addEventListener('touchmove',onTouchMove,{passive:false});
+  document.addEventListener('touchend',onTouchEnd);
 }
-
 function onTouchMove(e) {
-  e.preventDefault();
-  if (!touchClone) return;
-  const y = e.touches[0].clientY - touchOffsetY;
-  touchClone.style.top = y + 'px';
-
-  // Highlight target
-  document.querySelectorAll('.edit-item').forEach(el => el.classList.remove('drag-over'));
-  const els = [...editList.querySelectorAll('.edit-item')];
-  for (const el of els) {
-    const r = el.getBoundingClientRect();
-    if (e.touches[0].clientY > r.top && e.touches[0].clientY < r.bottom) {
-      if (+el.dataset.index !== touchDragIdx) el.classList.add('drag-over');
-      break;
-    }
+  e.preventDefault(); if(!touchClone) return;
+  touchClone.style.top=(e.touches[0].clientY-touchOffsetY)+'px';
+  document.querySelectorAll('.edit-item').forEach(el=>el.classList.remove('drag-over'));
+  for(const el of [...editList.querySelectorAll('.edit-item')]){
+    const r=el.getBoundingClientRect();
+    if(e.touches[0].clientY>r.top&&e.touches[0].clientY<r.bottom){if(+el.dataset.index!==touchDragIdx)el.classList.add('drag-over');break;}
   }
 }
-
 function onTouchEnd(e) {
-  document.removeEventListener('touchmove', onTouchMove);
-  document.removeEventListener('touchend',  onTouchEnd);
-
-  if (touchClone) { touchClone.remove(); touchClone = null; }
-
-  // Find drop target
-  const els = [...editList.querySelectorAll('.edit-item')];
-  let toIdx = touchDragIdx;
-  for (const el of els) {
+  document.removeEventListener('touchmove',onTouchMove);
+  document.removeEventListener('touchend',onTouchEnd);
+  if(touchClone){touchClone.remove();touchClone=null;}
+  let toIdx=touchDragIdx;
+  for(const el of [...editList.querySelectorAll('.edit-item')]){
     el.classList.remove('drag-over');
-    const r = el.getBoundingClientRect();
-    if (e.changedTouches[0].clientY > r.top && e.changedTouches[0].clientY < r.bottom) {
-      toIdx = +el.dataset.index; break;
-    }
+    const r=el.getBoundingClientRect();
+    if(e.changedTouches[0].clientY>r.top&&e.changedTouches[0].clientY<r.bottom){toIdx=+el.dataset.index;break;}
   }
-
-  reorderTasks(touchDragIdx, toIdx);
-  touchDragIdx = null;
+  reorderTasks(touchDragIdx,toIdx); touchDragIdx=null;
 }
 
 function syncFocus(idx) {
-  if(idx===currentIndex){taskLabel.textContent=tasks[currentIndex].name.toUpperCase();taskDuration.textContent=formatDuration(tasks[currentIndex].duration);}
+  if(idx===currentIndex){taskLabel.textContent=tasks[currentIndex].name;taskDuration.textContent=formatDuration(tasks[currentIndex].duration);}
   stepCounter.textContent=`${currentIndex+1} / ${tasks.length}`;
 }
 
-/* ─────────────────────────────────────────
-   EDIT MODE TOGGLE
-───────────────────────────────────────── */
 function setEditMode(on) {
   editMode=on;
   editToggleBtn.textContent=on?'Done':'Edit';
@@ -924,25 +899,17 @@ function setEditMode(on) {
   else{editList.classList.remove('visible');renderList();}
 }
 
-/* ─────────────────────────────────────────
-   TABS
-───────────────────────────────────────── */
 document.querySelectorAll('.overlay-tab').forEach(btn=>{
   btn.addEventListener('click',()=>{
     document.querySelectorAll('.overlay-tab').forEach(b=>b.classList.remove('active'));
     document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
-    btn.classList.add('active');
-    $('tab-'+btn.dataset.tab).classList.add('active');
-    // hide edit button on milestones tab
-    editToggleBtn.style.display = btn.dataset.tab==='tasks'?'':'none';
-    if(btn.dataset.tab==='milestones') { if(editMode) setEditMode(false); renderMilestonesList(); }
+    btn.classList.add('active'); $('tab-'+btn.dataset.tab).classList.add('active');
+    editToggleBtn.style.display=btn.dataset.tab==='tasks'?'':'none';
+    if(btn.dataset.tab==='milestones'){if(editMode)setEditMode(false);renderMilestonesList();}
     else renderList();
   });
 });
 
-/* ─────────────────────────────────────────
-   EVENTS
-───────────────────────────────────────── */
 editToggleBtn.addEventListener('click',()=>setEditMode(!editMode));
 addTaskBtn.addEventListener('click',()=>{
   tasks.push({name:'New task',duration:5});saveTasks();renderEditList();
@@ -951,10 +918,9 @@ addTaskBtn.addEventListener('click',()=>{
 
 function openOverlay(tab='tasks') {
   overlay.classList.add('open');
-  // activate correct tab
-  document.querySelectorAll('.overlay-tab').forEach(b=>{ b.classList.toggle('active',b.dataset.tab===tab); });
-  document.querySelectorAll('.tab-panel').forEach(p=>{ p.classList.toggle('active',p.id==='tab-'+tab); });
-  editToggleBtn.style.display = tab==='tasks'?'':'none';
+  document.querySelectorAll('.overlay-tab').forEach(b=>{b.classList.toggle('active',b.dataset.tab===tab);});
+  document.querySelectorAll('.tab-panel').forEach(p=>{p.classList.toggle('active',p.id==='tab-'+tab);});
+  editToggleBtn.style.display=tab==='tasks'?'':'none';
   if(tab==='milestones') renderMilestonesList();
   else { editMode?renderEditList():renderList(); }
 }
@@ -964,18 +930,16 @@ peekBtn.addEventListener('click',()=>overlay.classList.contains('open')?closeOve
 overlayBackdrop.addEventListener('click',closeOverlay);
 focusArea.addEventListener('click',()=>nextTask());
 restartBtn.addEventListener('click',restart);
-streakBadge.addEventListener('click',()=>{ openOverlay('milestones'); });
+streakBadge.addEventListener('click',()=>openOverlay('milestones'));
 
 let touchStartY=0;
 document.addEventListener('touchstart',e=>{touchStartY=e.touches[0].clientY;},{passive:true});
 document.addEventListener('touchend',e=>{
-  if(overlay.classList.contains('open')){if(touchStartY-e.changedTouches[0].clientY<-60) closeOverlay();return;}
-  if(touchStartY-e.changedTouches[0].clientY>60) openOverlay('tasks');
+  if(overlay.classList.contains('open')){if(touchStartY-e.changedTouches[0].clientY<-60)closeOverlay();return;}
+  if(touchStartY-e.changedTouches[0].clientY>60)openOverlay('tasks');
 },{passive:true});
 
-/* ─────────────────────────────────────────
-   INIT
-───────────────────────────────────────── */
+/* ── INIT ── */
 updateStreakBadge();
 renderTask(0,false);
 </script>
